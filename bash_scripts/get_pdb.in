@@ -1,0 +1,6 @@
+  parm /mnt/HDD/water_transport/suplementary/4e46/htmd_dihedral/run_htmd/data/e6s2_e5s1p0f620/structure.parm7
+  trajin /mnt/HDD/water_transport/suplementary/4e46/htmd_dihedral/run_htmd/data/e6s2_e5s1p0f620/trajectory.nc 4925 4925
+  autoimage
+  trajout /home/aravind/PhD_local/dean/starting_structures/pdb_new/e6s2_4925.pdb
+  trajout /home/aravind/PhD_local/dean/starting_structures/pdb_new/e6s2_4925.rst
+  go

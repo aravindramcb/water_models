@@ -1,0 +1,8 @@
+parm structure.parm7
+trajin prod2.nc
+trajin prod3.nc
+center @CA mass origin
+rmsd @N,CA,C mass first
+image origin center familiar
+trajout merged.nc netcdf
+run
