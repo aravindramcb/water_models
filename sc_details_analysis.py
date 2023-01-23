@@ -1,3 +1,4 @@
+
 # From filtered_supercluster_details_2.txt, get transprot events per model per simulation per group
 from collections import defaultdict
 import seaborn as sns
@@ -35,14 +36,14 @@ class tt_unassigned:
     Num_releases: int = field(repr=True, hash=True)
 
 
-def _find_sc_per_group(comparative_results_dir: str, groups_definition: dict = None, show_info: bool = False):
+def _find_sc_per_group(comparative_results_dir: str):
     """
-    Find the Superclusters forming P1,P2 and P3 tunnels per group per model. Reads the comparative analysis results
-    and then groups according to P1, P2 and P3 definitions.
-    :param show_info: Print the SC_IDs selected per user defined group.
+    Reads the comparative analysis results and then groups according to user definitions. Also gives out
+    'others' - which are the SCs not in any groups and 'unassigned' which are not assigned by transport tools
+
     :param comparative_results_dir: Directory in which comparative analysis results are present
-    :param groups_definition: Here comes what P1, P2 and P3 SC-IDs are.
-    :return:dict{folder_name:[group1_selected_sc_IDs,group2_selected_sc_IDs...],folder_name2:[....]}
+    :param groups_definition:
+    :return:dict(comparative_group_name:[events_assigned_to_scs,unassigned_events]
     """
     # Parse the results and store it
     comparative_analysis_results = [d for d in os.listdir(comparative_results_dir) if
@@ -75,21 +76,45 @@ def _find_sc_per_group(comparative_results_dir: str, groups_definition: dict = N
                 parsed_results[group_name] = [events_per_group, unasigned_per_group]
         else:
             print(f"{file_path} does not exist.")
+    return parsed_results
 
+def _get_scids_of_groups(comparative_analysis_results, groups_definition: dict = None, show_info: bool = False):
+    """
+    Gets the SC_IDs of user defined groups if they are present in comparative analysis results.
+    :param show_info: Print the SC_IDs selected per user defined group.
+    :param comparative_analysis_results: results dir location
+    :param groups_definition: User defined definition
+    :return: SC_IDs of tunnels split by user defined groups + others + unassigned
+    """
     # Split by user defined groups definitions
+    parsed_results =_find_sc_per_group(comparative_analysis_results)
     sc_id_by_tunnels = defaultdict(list)
     group_names = list(groups_definition.keys())
     for epoch in parsed_results.keys():
         assigned = parsed_results[epoch][0]  # 0 -> assigned , 1 -> unassigned
         SC_IDs = [x.SC_ID for x in assigned]
-        for user_group_name in group_names:
+        # Split into groups, which are defined at the beginning of script
+        for user_group_name in group_names:  # for P1 in [p1,p2,p3]
             sc_id_in_group = [x for x in SC_IDs if x in groups_definition[user_group_name]]
-            sc_id_not_in_group = [x for x in SC_IDs if x not in groups_definition[user_group_name]]
             if epoch not in sc_id_by_tunnels:
+                # Create a new entry in sc_id_by_tunnels if comparative_group does not exist
                 sc_id_by_tunnels[epoch] = [{user_group_name: sc_id_in_group}]
             else:
+                # If it exists, append other values in user group . eg., P2, P3.. others
                 sc_id_by_tunnels[epoch][0][user_group_name] = sc_id_in_group
-            sc_id_by_tunnels[epoch][0]['others'] = sc_id_not_in_group
+        # Add a new entry called 'others' where it has all the SCIDs which does not belong to the groups which user
+        # defined
+        selected_sc_ids=[item for sublist in sc_id_by_tunnels[epoch][0].values() for item in sublist]
+        other_scids = [x for x in SC_IDs if x not in selected_sc_ids]
+        sc_id_by_tunnels[epoch][0]["others"] = other_scids
+
+        # Add 'unassigned' to the results
+        unassigned = parsed_results[epoch][1]
+
+        # reorder
+        order = group_names + ["others"]
+        sc_id_by_tunnels[epoch][0] = {key: sc_id_by_tunnels[epoch][0][key] for key in order
+                                      if key in sc_id_by_tunnels[epoch][0]}
     if show_info:
         for group in sc_id_by_tunnels:
             print(f"for group {group}")
@@ -97,6 +122,21 @@ def _find_sc_per_group(comparative_results_dir: str, groups_definition: dict = N
             print(" ")
     return sc_id_by_tunnels
 
+def _get_unassigned_events(comparative_results_dir:str):
+    """
+    Returns only unassigned events per comparative groups definition / folder names
+    :param comparative_results_dir: Location of comparative results directories
+    :return:dict{comparative_group_name):unassigned_values,.....}
+    """
+    results=_find_sc_per_group(comparative_results_dir)
+    only_unassigned = {}
+    for group in results:
+        unassigned = results[group][1]
+        sim_id = unassigned.Sim_ID
+        num_events = unassigned.Num_Events
+
+        only_unassigned[group]=unassigned
+    return only_unassigned
 
 def _get_data_from_TT(tt_super_cluster_details):
     """
@@ -155,8 +195,6 @@ def _get_data_from_TT(tt_super_cluster_details):
                     pass
                     # print(readfile[i])
                 else:
-
-                    # do not provide explict indexes
                     # print("release", i)
                     epoch, waters = readfile[i].split(":", 1)
                     sim_id = epoch.split(sep=" ")[1]
@@ -246,7 +284,7 @@ def consolidate_results(comparative_analysis_results: str, tt_sc_details1_file_l
     tunnel_id = list(groups_definitions.keys())+["others"]
     group = [1, 2, 3, 4, 5]
     # CONSOLIDATE ENTRY + RELEASE PER SIMULATION
-    groups_scs = _find_sc_per_group(comparative_analysis_results, groups_definitions)  # get corresponding SC per group
+    groups_scs = _get_scids_of_groups(comparative_analysis_results, groups_definitions)  # get corresponding SC per group
     opc_contents = list(groups_scs.keys())[0:5]  # Assuming folder 1-5 is OPC and so on
     tip3p_contents = list(groups_scs.keys())[5:10]
     tip4pew_contents = list(groups_scs.keys())[10:15]
@@ -265,9 +303,9 @@ def consolidate_results(comparative_analysis_results: str, tt_sc_details1_file_l
                     sc_ids = groups_scs[group_name][0][tunnel_id[col]]
                 # print("TUNNEL ID =", tunnel_id[col])
                 entry_df, release_df = _process_results_for_SCs(sc_ids, tt_sc_details1_file_loc, model=model)
-                data = entry_df[i:j]  # To plot entry per tunnel
+                entry_data = entry_df[i:j]  # To plot entry per tunnel
                 release_data = release_df[i:j]
-                _combined_df = pd.concat([data, release_data], axis=1)
+                _combined_df = pd.concat([entry_data, release_data], axis=1)
                 # _combined_df.reset_index(inplace=True)
                 print(_combined_df.sum())
                 sum = list(_combined_df.sum(axis=1))
@@ -277,21 +315,35 @@ def consolidate_results(comparative_analysis_results: str, tt_sc_details1_file_l
                 consolidated_df = pd.concat([consolidated_df, _tmp_df], axis=1)
             i += 5
             j += 5
+    # Add the unassigned events to consolidated_df
+    unassigned_df = pd.DataFrame()
+    unassigned_ind_df = pd.DataFrame()
+    unassigned = _get_unassigned_events(comparative_analysis_results)
+    for group in unassigned:
+        num_entry = unassigned[group].Num_entries
+        num_release = unassigned[group].Num_releases
+        _tmp_unas_df = pd.DataFrame({group: [num_entry + num_release]})
+        _tmp_unas_ind_df = pd.DataFrame({group: [num_entry,num_release]})
+        unassigned_df = pd.concat([unassigned_df, _tmp_unas_df], axis=1)
+        unassigned_ind_df = pd.concat([unassigned_ind_df, _tmp_unas_ind_df], axis=1)
+    unassigned_df.to_csv(save_location + 'unassigned_events.csv')
+    unassigned_ind_df.to_csv(save_location+'unassigned_individual.csv')
+
     if save_location is not None:
         consolidated_df.to_csv(save_location + 'consolidated_results_with_unassigned.csv', index=False)
     return consolidated_df
 
 
-def plot_consolidated_result(consolidated_csv_file, plot_normalized: bool = False):
+def plot_consolidated_result(consolidated_csv_file:str,unassigned_csv:str, plot_normalized: bool = False):
     import matplotlib.patches as mpatches
     import numpy as np
     colors = sns.color_palette('deep', 3)
     consolidated_df = pd.read_csv(consolidated_csv_file)
-    i, j, k = (0, 15, 30)  #
-    rows, cols = (5, 3)
+    i, j, k = (0, 20, 40)  #
+    rows, cols = (5, 4)
     import matplotlib.pyplot as plt
     sns.set(style='white')
-    fig, ax = plt.subplots(nrows=5, ncols=3, figsize=(8.27, 11.7), dpi=150, sharex='all')
+    fig, ax = plt.subplots(nrows=5, ncols=5, figsize=(14.27, 11.7), dpi=150, sharex='all')
     plt.suptitle("Events - Consolidated", fontsize=15, fontweight='bold')
     for row in range(rows):
         for col in range(cols):
@@ -304,11 +356,21 @@ def plot_consolidated_result(consolidated_csv_file, plot_normalized: bool = Fals
                 scaled_df.plot.bar(ax=ax[row, col], color=colors, sharey='all')
             else:
                 # Consolidated with standard deviation
-                sns.barplot(data=_df, ax=ax[row, col], errorbar='se', capsize=.1, linewidth=1, errwidth=1)
+                print(_df)
+                sns.barplot(data=_df, ax=ax[row, col],width=0.5, errorbar='se', capsize=.1, linewidth=1, errwidth=1)
             ax[row, col].set_xticklabels([])
             i += 1
             j += 1
             k += 1
+    a, b, c = (0, 5, 10)
+    unassigned_df = pd.read_csv(unassigned_csv)
+    # Plot unassigned
+    for unas_col in range(rows):
+        _unas_df = unassigned_df.iloc[:, [a, b, c]]
+        sns.barplot(data=_unas_df, ax=ax[unas_col,4], width=0.5)
+        a +=1
+        b +=1
+        c +=1
     plt.tight_layout(pad=1.9, w_pad=0.1, h_pad=0.1)
     opc_patch = mpatches.Patch(color=colors[0], label='OPC')
     tip3p_patch = mpatches.Patch(color=colors[1], label='TIP3P')
@@ -324,8 +386,12 @@ def plot_consolidated_result(consolidated_csv_file, plot_normalized: bool = Fals
     ax[2, 0].set_ylabel("Group 1.8A", fontsize=15)
     ax[3, 0].set_ylabel("Group 2.4A", fontsize=15)
     ax[4, 0].set_ylabel("Group 3A", fontsize=15)
+    ax[0,3].set_title("Others",fontsize=15,fontweight='bold')
+    ax[0, 4].set_title("Unassigned", fontsize=15, fontweight='bold')
     # ax[4, 2].set_yticklabels([])
     # ax[4, 1].set_xlabel("Simulation #", fontsize=15)
+
+
     if plot_normalized == True:
         plt.savefig('/home/aravind/PhD_local/dean/figures/transport_tools/consolidated_tt_events_scaled.png')
     else:
@@ -334,18 +400,19 @@ def plot_consolidated_result(consolidated_csv_file, plot_normalized: bool = Fals
 
 
 def plot_results_per_tunnel(comparative_analysis_results: str, groups_definitions: dict, model: str,
-                            tt_sc_details2_file_loc: str, plot_type: str = "consolidated"):
+                            tt_sc_details2_file_loc: str, unassigned_csv:str, plot_type: str = "consolidated"):
     global sc_ids
     import matplotlib.pyplot as plt
     sns.set(style='white')
-
-    fig, ax = plt.subplots(nrows=5, ncols=3, figsize=(8.27, 11.7), dpi=150, sharex='all')
+    colors = {"opc": ['xkcd:dusk', 'xkcd:cool blue'], "tip3p": ['xkcd:dirt', 'xkcd:browny orange'],
+              "tip4pew": ['xkcd:moss green', 'xkcd:seaweed']}
+    fig, ax = plt.subplots(nrows=5, ncols=5, figsize=(10.27, 11.7), dpi=150, sharex='col')
     plt.suptitle(f"{model}".upper() + " Events", fontsize=15, fontweight='bold')
-    rows, cols = (5, 3)
+    rows, cols = (5, 4)
     i, j = (0, 5)
     x_label = [1, 2, 3, 4, 5]
-    tunnel_id = ["P1", "P2", "P3"]
-    groups_scs = _find_sc_per_group(comparative_analysis_results, groups_definitions)  # get corresponding SC per group
+    groups_scs = _get_scids_of_groups(comparative_analysis_results, groups_definitions)  # get corresponding SC per group
+    tunnel_id = list(groups_definitions.keys()) + ["others"]
     opc_contents = list(groups_scs.keys())[0:5]
     tip3p_contents = list(groups_scs.keys())[5:10]
     tip4pew_contents = list(groups_scs.keys())[10:15]
@@ -354,47 +421,88 @@ def plot_results_per_tunnel(comparative_analysis_results: str, groups_definition
             if model == "opc":
                 group_name = opc_contents[row]
                 sc_ids = groups_scs[group_name][0][tunnel_id[col]]
-                # sc_ids = opc_scs[row][scids_for_groups[col]]  # opc_scid[1]["P1"]
             if model == "tip3p":
                 group_name = tip3p_contents[row]
                 sc_ids = groups_scs[group_name][0][tunnel_id[col]]
             if model == "tip4pew":
-                # sc_ids = tip4pew_scid[row][tunnel_id[col]]
                 group_name = tip4pew_contents[row]
                 sc_ids = groups_scs[group_name][0][tunnel_id[col]]
             entry_df, release_df = _process_results_for_SCs(sc_ids, tt_sc_details2_file_loc, model)
-            data = entry_df[i:j]  # To plot entry per tunnel 
+            data = entry_df[i:j]  # To plot entry per tunnel
             release_data = release_df[i:j]
             _combined_df = pd.concat([data, release_data], axis=1)
-            _combined_df.reset_index(inplace=True)
-            colors = {"opc": ['xkcd:dusk', 'xkcd:cool blue'], "tip3p": ['xkcd:dirt', 'xkcd:browny orange'],
-                      "tip4pew": ['xkcd:moss green', 'xkcd:seaweed']}
+            _combined_df.reset_index(inplace=True,drop=True)
+            _combined_df["Total"] = _combined_df.sum(axis=1)
 
-            plot = _combined_df.plot.bar(x='index', ax=ax[row, col], stacked=True, color=colors[model], legend=False)
+            # using seaborn to plot
+            sns.barplot(ax=ax[row,col],data=_combined_df,x=_combined_df.index,y='Total',color=colors[model][0])
+            sns.barplot(ax=ax[row,col],data=_combined_df,x=_combined_df.index,y='Release_events',color=colors[model][1])
 
             # CONSOLIDATED PLOT per model
             # plot_consolidated = sns.barplot(data=_combined_df.sum(axis=1), ax=ax[row, col])
             # TO plot entry and release events, un-comment and modify below
             # plot = sns.barplot(data=data,x=data.index,y='Entry_events',ax=ax[row,col],color='b')
+
+            # # Set x and y ticks
             ax[row, col].set_ylabel("")
             ax[row, col].set_xlabel("")
-            xlabels = ax[row, col].get_xticks()
+            ax[row, col].set_xticks([0, 1, 2, 3, 4])
             ax[row, col].set_xticklabels(x_label, rotation=0)
+
         i += 5
         j += 5
+
+    if model == 'opc':
+        index = 1
+    elif model == 'tip3p':
+        index = 6
+    elif model == 'tip4pew':
+        index = 11
+
+    # Load unassigned data
+    unassigned_df = pd.read_csv(unassigned_csv)
+    unassigned_df.rename(index={0:'entry',1:'exit'})
+
+    # Plot unassigned
+    for unas_col in range(5):
+        _unas_df = unassigned_df.iloc[:, [index]]
+        _unas_df = _unas_df.T
+        _unas_df = _unas_df.rename(columns={0: "entry", 1: "release"})
+        _unas_df['total'] = _unas_df.sum(axis=1)
+        _unas_df.reset_index(inplace=True)
+        sns.barplot(data=_unas_df,x='index',y='total', ax=ax[unas_col,4],width=0.2,color=colors[model][0])
+        sns.barplot(data=_unas_df,x='index',y='release',ax=ax[unas_col,4],width=0.2,color=colors[model][1])
+        ax[unas_col, 4].set_ylabel("")
+        ax[unas_col, 4].set_xlabel("")
+        ax[unas_col,4].set_xticks([0])
+        ax[unas_col,4].set_xticklabels(["Unassigned"])
+        index += 1
+
+    # Generate Legend
     plt.tight_layout(pad=1.9, w_pad=0.1, h_pad=0.5)
-    plt.subplots_adjust(bottom=0.1)
-    ax[0, 2].legend(bbox_to_anchor=(0.1, 1.15, 0, 0), loc="lower left",
-                    mode="expand", borderaxespad=0, ncol=1)
+    topbar = plt.Rectangle((0, 0), 1, 1, fc=colors[model][1], edgecolor='none')
+    bottombar = plt.Rectangle((0, 0), 1, 1, fc=colors[model][0], edgecolor='none')
+    ax[0, 4].legend([bottombar,topbar],["ENTRY","RELEASE"],bbox_to_anchor=(1.1, 1.15, 0, 0), loc="lower right",
+                     borderaxespad=1, ncol=2)
+
+    # Add more details
     ax[0, 0].set_title("P1", fontsize=15, fontweight='bold')
     ax[0, 1].set_title("P2", fontsize=15, fontweight='bold')
     ax[0, 2].set_title("P3", fontsize=15, fontweight='bold')
+    ax[0, 3].set_title("Others", fontsize=15, fontweight='bold')
+    ax[0, 4].set_title("Unassigned", fontsize=15, fontweight='bold')
     ax[0, 0].set_ylabel("Group 1A", fontsize=15)
     ax[1, 0].set_ylabel("Group 1.4A", fontsize=15)
     ax[2, 0].set_ylabel("Group 1.8A", fontsize=15)
     ax[3, 0].set_ylabel("Group 2.4A", fontsize=15)
     ax[4, 0].set_ylabel("Group 3A", fontsize=15)
-    ax[4, 1].set_xlabel("Simulation #", fontsize=15)
+    ax[4, 2].set_xlabel("Simulation #", fontsize=15)
+
+    # if model == "tip3p":
+    #     ax[1,2].text(0.5, 0.5,'No events', ha='center', va='center', transform=ax[1,2].transAxes)
+    #     ax[1, 3].text(0.5, 0.5, 'No events', ha='center', va='center', transform=ax[1, 3].transAxes)
+
+
     plt.savefig(f'/home/aravind/PhD_local/dean/figures/transport_tools/combined_events_{model}.png')
     # plt.savefig(f'/home/aravind/PhD_local/dean/figures/{model}_consolidated.png')
     # plt.show()
@@ -404,19 +512,28 @@ def main():
     comparative_results = "/mnt/gpu/dean/tt/tt_0_9_5/statistics/comparative_analysis"
     results = "/mnt/gpu/dean/tt/tt_0_9_5/data/super_clusters/details" \
               "/filtered_super_cluster_details2.txt"
+    unasigned = "/home/aravind/PhD_local/dean/figures/transport_tools/unassigned_individual.csv"
     groups_def = {"P1": [1, 2, 5, 7, 12, 30, 31], "P2": [3, 4, 6, 11, 25, 27, 41, 43, 44, 50, 58, 16],
                   "P3": [8, 9, 10, 24]}
     # DEBUG
     # _get_data_from_TT(results)
     # _process_results_for_SCs([1],results,'opc')
     # _find_sc_per_group(comparative_results, groups_def,show_info=True)
-    # PLOT stacked entry/release
-    # plot_results_per_tunnel(comparative_results,groups_def,"tip3p", results)
-    # PLOT consolidated results
-    consolidate_results(comparative_results, results, groups_def,
+
+    # Step1 - Consolidate results - This will generate CSVs of assigned and unassigned events
+    consolidate_results(comparative_analysis_results=comparative_results,tt_sc_details1_file_loc=results
+                        , groups_definitions=groups_def,
                         save_location="/home/aravind/PhD_local/dean/figures/transport_tools/")
-    # plot_consolidated_result('~/PhD_local/dean/figures/transport_tools/consolidated_results.csv',
-    #                          plot_normalized=True)
+
+    # Step2 - Plots
+    # PLOT consolidated results
+    # plot_consolidated_result('~/PhD_local/dean/figures/transport_tools/consolidated_results_with_unassigned.csv',
+    #                          '~/PhD_local/dean/figures/transport_tools/unassigned_events.csv',
+    #                          plot_normalized=False)
+
+    # PLOT stacked entry/release
+    # plot_results_per_tunnel(comparative_analysis_results=comparative_results, groups_definitions=groups_def
+    #                         , model="tip3p", tt_sc_details2_file_loc=results, unassigned_csv=unasigned)
 
 
 if __name__ == '__main__':
