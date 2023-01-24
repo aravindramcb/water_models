@@ -19,20 +19,25 @@ def parse_bottlenecks(system, caver_cluster_id):
 
 
 # sim_list = [i for i in os.listdir(sim_dir) if os.path.isdir(sim_dir + i)]
-sim_list = ['1.4A_opc_1', '1.4A_opc_2', '1.4A_opc_3', '1.4A_opc_4', '1.4A_opc_5', '1.4A_tip3p_1', '1.4A_tip3p_2',
-            '1.4A_tip3p_3', '1.4A_tip3p_4', '1.4A_tip3p_5', '1.4A_tip4pew_1', '1.4A_tip4pew_2', '1.4A_tip4pew_3',
-            '1.4A_tip4pew_4', '1.4A_tip4pew_5', '1.8A_opc_1', '1.8A_opc_2', '1.8A_opc_3', '1.8A_opc_4', '1.8A_opc_5',
-            '1.8A_tip3p_1', '1.8A_tip3p_2', '1.8A_tip3p_3', '1.8A_tip3p_4', '1.8A_tip3p_5', '1.8A_tip4pew_1',
-            '1.8A_tip4pew_2', '1.8A_tip4pew_3', '1.8A_tip4pew_4', '1.8A_tip4pew_5', '1A_opc_1', '1A_opc_2', '1A_opc_3',
-            '1A_opc_4', '1A_opc_5', '1A_tip3p_1', '1A_tip3p_2', '1A_tip3p_3', '1A_tip3p_4', '1A_tip3p_5', '1A_tip4pew_1',
-            '1A_tip4pew_2', '1A_tip4pew_3', '1A_tip4pew_4', '1A_tip4pew_5', '2.4A_opc_1', '2.4A_opc_2', '2.4A_opc_3',
-            '2.4A_opc_4', '2.4A_opc_5', '2.4A_tip3p_1', '2.4A_tip3p_2', '2.4A_tip3p_3', '2.4A_tip3p_4', '2.4A_tip3p_5',
-            '2.4A_tip4pew_1', '2.4A_tip4pew_2', '2.4A_tip4pew_3', '2.4A_tip4pew_4', '2.4A_tip4pew_5', '3A_opc_1',
-            '3A_opc_2', '3A_opc_3', '3A_opc_4', '3A_opc_5', '3A_tip3p_1', '3A_tip3p_2', '3A_tip3p_3', '3A_tip3p_4',
-            '3A_tip3p_5', '3A_tip4pew_1', '3A_tip4pew_2', '3A_tip4pew_3', '3A_tip4pew_4', '3A_tip4pew_5']
+sim_list = {'1.4A_opc_1': 1, '1.4A_opc_2': 1, '1.4A_opc_3': 1, '1.4A_opc_4': 1, '1.4A_opc_5': 1, '1.4A_tip3p_1': 1,
+            '1.4A_tip3p_2': 1, '1.4A_tip3p_3': 1, '1.4A_tip3p_4': 1, '1.4A_tip3p_5': 1, '1.4A_tip4pew_1': 1,
+            '1.4A_tip4pew_2': 1, '1.4A_tip4pew_3': 1, '1.4A_tip4pew_4': 1, '1.4A_tip4pew_5': 1, '1.8A_opc_1': 1,
+            '1.8A_opc_2': 1, '1.8A_opc_3': 1, '1.8A_opc_4': 1, '1.8A_opc_5': 1, '1.8A_tip3p_1': 1, '1.8A_tip3p_2': 1,
+            '1.8A_tip3p_3': 1, '1.8A_tip3p_4': 1, '1.8A_tip3p_5': 1, '1.8A_tip4pew_1': 1, '1.8A_tip4pew_2': 1,
+            '1.8A_tip4pew_3': 1, '1.8A_tip4pew_4': 1, '1.8A_tip4pew_5': 1, '1A_opc_1': 1, '1A_opc_2': 1, '1A_opc_3': 4,
+            '1A_opc_4': 1, '1A_opc_5': 7, '1A_tip3p_1': 1, '1A_tip3p_2': 1, '1A_tip3p_3': 4, '1A_tip3p_4': 1,
+            '1A_tip3p_5': 7, '1A_tip4pew_1': 1, '1A_tip4pew_2': 1, '1A_tip4pew_3': 4, '1A_tip4pew_4': 1,
+            '1A_tip4pew_5': 7, '2.4A_opc_4': 1, '2.4A_opc_5': 1, '2.4A_tip3p_4': 1, '2.4A_tip3p_5': 1,
+            '2.4A_tip4pew_4': 1, '2.4A_tip4pew_5': 1, '2.4A_opc_1': 1, '2.4A_opc_2': 1, '2.4A_opc_3': 1,
+            '2.4A_tip3p_1': 1, '2.4A_tip3p_2': 1, '2.4A_tip4pew_1': 1, '2.4A_tip4pew_2': 1, '2.4A_tip4pew_3': 1,
+            '3A_opc_1': 1, '3A_opc_2': 1, '3A_opc_3': 1, '3A_opc_4': 1, '3A_opc_5': 1, '3A_tip3p_1': 1, '3A_tip3p_2': 1,
+            '3A_tip3p_3': 1, '3A_tip3p_4': 1, '3A_tip4pew_1': 1, '3A_tip4pew_2': 1, '3A_tip4pew_3': 1, '2.4A_tip3p_3': 1,
+            '3A_tip3p_5': 1, '3A_tip4pew_4': 1, '3A_tip4pew_5': 1}
+
 
 # sorted_list = sorted(sim_list)
 # print(sorted_list)
+
 caver_id_p2= [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 5, 3, 2, 2, 2, 3, 3, 2, 2, 2, 4, 3, 2, 7, 5, 2, 10, 2,
            3, 5, 2, 8, 2, 2, 6, 2, 6, 3, 2, 6, 9, 9, 3, 2, 2, 8, 9, 2, 10, 14, 16, 22, 2, 3, 2, 11, 6, 2, 2, 2, 7, 4, 2,
            2, 2, 25, 45]
@@ -44,10 +49,9 @@ caver_id_p3=[5, 4, 6, 5, 6, 3, 4, 5, 5, 5, 3, 4, 5, 5, 6, 4, 4, 8, 7, 6, 6, 4, 7
 #                4, 5, 9, 7, 3, 4, 4, 9, 6, 3, 28, 14, 10, 5, 4, 29, 12, 8, 4, 6, 35, 22, 10, 4, 5, 19, 33, 26, 17, 48,
 #                20, 23, 18, 31, 18, 18, 17, 17, 24, 29]
 
-for sim in sim_list:
-    index=list.index(sim_list,sim)
-    print(sim,"->",caver_id_p3[index])
-    parse_bottlenecks(sim,caver_id_p3[index])
+for sim_id,scid in sim_list.items():
+    print(sim_id,"->",scid)
+    parse_bottlenecks(sim_id,scid)
     # parse_bottlenecks(sim,1)
 bl_sorted_df = (bottleneck_radius.reindex(sorted(bottleneck_radius.columns), axis=1))
 
@@ -136,8 +140,8 @@ x_labels = ['Whole'] + [col_names[i].split(sep='_', maxsplit=1)[1] for i in rang
 fig, axes = plt.subplots(3, 2, figsize=(30, 25), dpi=150)
 plt.subplots_adjust(hspace=0.3,top=1)
 sns.set()
-# plt.suptitle("BOTTLENECK RADII OF MAIN TUNNEL(P1)", fontsize=20, fontweight='bold')
-plt.suptitle("BOTTLENECK RADII OF P3 TUNNEL", fontsize=20, fontweight='bold',y=0.98)
+plt.suptitle("BOTTLENECK RADII OF MAIN TUNNEL(P1)", fontsize=20, fontweight='bold')
+# plt.suptitle("BOTTLENECK RADII OF P3 TUNNEL", fontsize=20, fontweight='bold',y=0.98)
 box1 = sns.boxplot(data=df_1, ax=axes[0, 0], color='b')
 box1.set_xlabel("Group 1A", fontsize=20, fontweight='bold')
 box1.artists[0].set_facecolor('grey')
@@ -160,7 +164,7 @@ box5.set_xlabel("Group 3A", fontsize=20, fontweight='bold')
 box5.artists[0].set_facecolor('grey')
 x_tick_location=np.arange(16)
 for ax in axes.flatten():
-    ax.set_ylim(bottom=0.8, top=3)
+    ax.set_ylim(bottom=0.8, top=4)
     ax.set_xticks(x_tick_location)
     ax.set_xticklabels(x_labels,rotation=30,fontsize=20)
     ax.tick_params(axis='y',labelsize=20)
@@ -169,5 +173,5 @@ color_pal = {'1A': 'b', '1.4A': 'g', '1.8A': 'r', '2.4A': 'c', '3A': 'm'}
 box6 = sns.boxplot(data=avg_df,palette=color_pal)
 box6.set_xlabel("Overall", fontsize=20, fontweight='bold')
 plt.tight_layout(pad=1.8)
-plt.savefig("/home/aravind/PhD_local/dean/figures/bottlenecks/p3.png")
+plt.savefig("/home/aravind/PhD_local/dean/figures/bottlenecks/p1.png")
 # plt.show()
