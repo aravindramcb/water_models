@@ -343,7 +343,7 @@ def plot_consolidated_result(consolidated_csv_file:str,unassigned_csv:str, plot_
     rows, cols = (5, 4)
     import matplotlib.pyplot as plt
     sns.set(style='white')
-    fig, ax = plt.subplots(nrows=5, ncols=5, figsize=(14.27, 11.7), dpi=150, sharex='all')
+    fig, ax = plt.subplots(nrows=5, ncols=5, figsize=(12.27, 11.7), dpi=150, sharex='col')
     plt.suptitle("Events - Consolidated", fontsize=15, fontweight='bold')
     for row in range(rows):
         for col in range(cols):
@@ -365,9 +365,10 @@ def plot_consolidated_result(consolidated_csv_file:str,unassigned_csv:str, plot_
     a, b, c = (0, 5, 10)
     unassigned_df = pd.read_csv(unassigned_csv)
     # Plot unassigned
-    for unas_col in range(rows):
+    for unas_row in range(rows):
         _unas_df = unassigned_df.iloc[:, [a, b, c]]
-        sns.barplot(data=_unas_df, ax=ax[unas_col,4], width=0.5)
+        sns.barplot(data=_unas_df, ax=ax[unas_row,4], width=0.5)
+        ax[unas_row,4].set_xticklabels([])
         a +=1
         b +=1
         c +=1
@@ -375,9 +376,9 @@ def plot_consolidated_result(consolidated_csv_file:str,unassigned_csv:str, plot_
     opc_patch = mpatches.Patch(color=colors[0], label='OPC')
     tip3p_patch = mpatches.Patch(color=colors[1], label='TIP3P')
     tip4pew_patch = mpatches.Patch(color=colors[2], label='TIP4P-Ew')
-    fig.legend(handles=[opc_patch, tip3p_patch, tip4pew_patch],
-               bbox_to_anchor=(1, 0), loc="lower right",
-               bbox_transform=fig.transFigure, ncol=3)
+    ax[0, 4].legend([opc_patch, tip3p_patch,tip4pew_patch], ["OPC", "TIP3P", "TIP4P-Ew"],
+                    bbox_to_anchor=(1.1, 1.15, 0, 0), loc="lower right",
+                    borderaxespad=1, ncol=3)
     ax[0, 0].set_title("P1", fontsize=15, fontweight='bold')
     ax[0, 1].set_title("P2", fontsize=15, fontweight='bold')
     ax[0, 2].set_title("P3", fontsize=15, fontweight='bold')
@@ -517,13 +518,13 @@ def main():
                   "P3": [8, 9, 10, 24]}
     # DEBUG
     # _get_data_from_TT(results)
-    # _process_results_for_SCs([1],results,'opc')
-    # _find_sc_per_group(comparative_results, groups_def,show_info=True)
+    _process_results_for_SCs([1],results,'opc')
+    _get_scids_of_groups(comparative_results, groups_def,show_info=True)
 
     # Step1 - Consolidate results - This will generate CSVs of assigned and unassigned events
-    consolidate_results(comparative_analysis_results=comparative_results,tt_sc_details1_file_loc=results
-                        , groups_definitions=groups_def,
-                        save_location="/home/aravind/PhD_local/dean/figures/transport_tools/")
+    # consolidate_results(comparative_analysis_results=comparative_results,tt_sc_details1_file_loc=results
+    #                     , groups_definitions=groups_def,
+    #                     save_location="/home/aravind/PhD_local/dean/figures/transport_tools/")
 
     # Step2 - Plots
     # PLOT consolidated results
