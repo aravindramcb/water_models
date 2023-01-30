@@ -1,4 +1,0 @@
-parm structure_HMR.parm7
-trajin merged.nc 1 1
-trajout structure.pdb pdb include_ep
-run
