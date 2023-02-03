@@ -1,10 +1,12 @@
-
+import itertools
 # From filtered_supercluster_details_2.txt, get transprot events per model per simulation per group
 from collections import defaultdict
 import seaborn as sns
 import pandas as pd
 import os
 from dataclasses import dataclass, field
+
+from matplotlib import pyplot as plt
 
 
 @dataclass(order=True, repr=True, unsafe_hash=False)
@@ -34,6 +36,23 @@ class tt_unassigned:
     Num_Events: int = field(repr=True, hash=True)
     Num_entries: int = field(repr=True, hash=True)
     Num_releases: int = field(repr=True, hash=True)
+
+@dataclass(order=True, repr=True, unsafe_hash=False)
+class before_assignment:
+    SC_ID: int
+    No_Sims: int
+    Total_No_Frames: int
+    Avg_No_Frames: float
+    Avg_BR: float
+    StDev_BR: float
+    Max_BR: float
+    Avg_Len: float
+    StDev_Len: float
+    Avg_Cur: float
+    StDev_Cur: float
+    Avg_Throug: float
+    StDev_Throug: float
+    Priority: float
 
 
 def _find_sc_per_group(comparative_results_dir: str):
@@ -78,6 +97,38 @@ def _find_sc_per_group(comparative_results_dir: str):
             print(f"{file_path} does not exist.")
     return parsed_results
 
+def _process_unassigned(comparative_results_dir: str):
+    """
+    Reads the comparative analysis results and then groups according to user definitions.
+    :param comparative_results_dir: Directory in which comparative analysis results are present
+    :param groups_definition:
+    :return:dict
+    """
+    # Parse the results and store it
+    comparative_analysis_results = [d for d in os.listdir(comparative_results_dir) if
+                                    os.path.isdir(os.path.join(comparative_results_dir, d))]
+    comparative_analysis_results.sort()
+    parsed_results = defaultdict(list)
+    for group in comparative_analysis_results:
+        file_path = os.path.join(comparative_results_dir, group, "2-filtered_tunnels_statistics.txt")
+
+        if os.path.isfile(file_path):
+            with open(file_path, "r") as file:
+                lines = file.readlines()
+                events_per_group = []
+                for line in lines[18:-1]:  # start reading from line 22
+                    # Parse the line and create a DataClass object
+                    if "-" in line:
+                        continue
+                    else:
+                        data = [float(x) if '.' in x else int(x) for x in line.split(",")]
+                        events_per_group.append(before_assignment(*data))
+                group_name = group
+                parsed_results[group_name] = events_per_group
+        else:
+            print(f"{file_path} does not exist.")
+    return parsed_results
+
 def _get_scids_of_groups(comparative_analysis_results, groups_definition: dict = None, show_info: bool = False):
     """
     Gets the SC_IDs of user defined groups if they are present in comparative analysis results.
@@ -117,26 +168,44 @@ def _get_scids_of_groups(comparative_analysis_results, groups_definition: dict =
                                       if key in sc_id_by_tunnels[epoch][0]}
     if show_info:
         for group in sc_id_by_tunnels:
-            print(f"for group {group}")
+            # print(f"for group {group}")
             print(sc_id_by_tunnels[group])
-            print(" ")
+            # print(" ")
+
     return sc_id_by_tunnels
 
-def _get_unassigned_events(comparative_results_dir:str):
+def _get_unassigned_events(tt_results:str):
     """
     Returns only unassigned events per comparative groups definition / folder names
-    :param comparative_results_dir: Location of comparative results directories
+    :param tt_results: TransportTools results directory.
     :return:dict{comparative_group_name):unassigned_values,.....}
     """
-    results=_find_sc_per_group(comparative_results_dir)
-    only_unassigned = {}
-    for group in results:
-        unassigned = results[group][1]
-        sim_id = unassigned.Sim_ID
-        num_events = unassigned.Num_Events
+    outlier_file = os.path.join(tt_results,"data","super_clusters","details","outlier_transport_events_details.txt")
+    with open(outlier_file,'r') as infile:
+        contents=infile.readlines()
+    unassigned=defaultdict(dict)
+    current_category ='entry'
+    for line in contents[4:]:
+        # entry: (from Simulation: AQUA-DUCT ID, (Resname:Residue), start_frame->end_frame; ... )
+        # 'from 3A_opc_3: 1952, (WAT:8178), 19098->19131;'
+        if 'from' in line and not 'release' in line:
+            line = line.strip()
+            sim_ID = line.split(" ")[1].split(":")[0]
+            num_events = len(line.split(";")[:-1])
+            if current_category in unassigned[sim_ID]:
+                unassigned[sim_ID][current_category]+=num_events
+            else:
+                unassigned[sim_ID] = {"entry": 0, "release": 0}
+                unassigned[sim_ID][current_category]=num_events
+        elif 'release' in line:
+            current_category = "release"
+    return unassigned
 
-        only_unassigned[group]=unassigned
-    return only_unassigned
+
+
+
+
+
 
 def _get_data_from_TT(tt_super_cluster_details):
     """
@@ -211,7 +280,7 @@ def _get_data_from_TT(tt_super_cluster_details):
     return super_cluster_ids, entry_water, release_water
 
 
-def _process_results_for_SCs(required_SCIDs: list, tt_sc_details1_file: str, model: str):
+def _process_results_for_SCs(required_SCIDs: list, tt_results: str, model: str):
     """
     Helper function
     Give me the required Supercluster IDs and I will give you the input and release number of events for them.
@@ -219,6 +288,9 @@ def _process_results_for_SCs(required_SCIDs: list, tt_sc_details1_file: str, mod
     :param required_SCIDs: Super Cluster IDs to be processed. Eg., [1] or [1,3,5] etc.,
     :param tt_sc_details1_file: The results file to be processed
     """
+    tt_sc_details2_file = os.path.join(tt_results,"data","super_clusters","details",
+                                       "filtered_super_cluster_details2.txt")
+
     sim_list = ['1A_opc_1', '1A_opc_2', '1A_opc_3', '1A_opc_4', '1A_opc_5', '1.4A_opc_1', '1.4A_opc_2', '1.4A_opc_3',
                 '1.4A_opc_4', '1.4A_opc_5', '1.8A_opc_1', '1.8A_opc_2', '1.8A_opc_3', '1.8A_opc_4',
                 '1.8A_opc_5', '2.4A_opc_1', '2.4A_opc_2', '2.4A_opc_3', '2.4A_opc_4', '2.4A_opc_5', '3A_opc_1',
@@ -243,7 +315,7 @@ def _process_results_for_SCs(required_SCIDs: list, tt_sc_details1_file: str, mod
         sim_list = sim_list[50:75]
 
     # print(model, sim_list)
-    sc_ids, entry, release = _get_data_from_TT(tt_sc_details1_file)
+    sc_ids, entry, release = _get_data_from_TT(tt_sc_details2_file)
     _tmp_df = pd.DataFrame(0, index=[0], columns=sim_list)
     # ENTRY
     for sc_ID in required_SCIDs:
@@ -268,15 +340,97 @@ def _process_results_for_SCs(required_SCIDs: list, tt_sc_details1_file: str, mod
     return tt_entry_df_for_all_sc, tt_release_df_for_all_sc
 
 
-def consolidate_results(comparative_analysis_results: str, tt_sc_details1_file_loc: str,
-                        groups_definitions: dict, save_location=None):
+def plot_tunnels_before_assignment(groups_definitons:dict, comparative_analysis_results_folder, save_location:str=None):
+    # Get the Total_No_Frames and normalize it
+    parsed_results = _process_unassigned(comparative_analysis_results_folder)
+    frames_per_group=defaultdict(dict)
+    scids_of_gd =list(groups_definitons.values())
+    full_values = list(itertools.chain(*scids_of_gd))
+    for group_name in parsed_results:
+        frames =defaultdict(dict)
+        current_group = parsed_results[group_name]  # Current group = opc_1
+        others = []
+        for gd in groups_definitons:  # For P1 in P1,P2,P3
+            frames_in_group =[]
+
+            # Iterate through each scid in current group and add it to list if present, else to others.
+            for event in current_group:
+                scid = event.SC_ID
+                total_frames = event.Total_No_Frames
+                if scid in groups_definitons[gd]:
+                    frames_in_group.append(total_frames)
+                elif scid not in full_values:
+                    others.append(total_frames)
+            sum_per_gd = int(sum(frames_in_group))
+            sum_others_per_gd = int(sum(others))
+            # frames[gd]=sum_per_gd
+            frames.update({gd:sum_per_gd})
+        frames.update(dict(others=int(sum(others))))
+        frames_per_group[group_name]=frames
+    df = pd.DataFrame.from_dict(frames_per_group)
+
+    # Plot output
+    # ------------
+    import matplotlib.patches as mpatches
+    colors = sns.color_palette('deep', 3)
+    row,col =(5,4)
+    fig, ax = plt.subplots(nrows=5, ncols=4, figsize=(8.27, 11.7), dpi=300, sharex='col')
+    sns.set(style='whitegrid')
+    sns.set_palette('deep')
+    plt.suptitle("TUNNEL OCCURRENCES BEFORE ASSIGNMENT", fontsize=12, fontweight='bold')
+    o,t,p = (0,5,10)
+    for r in range(row):
+        for c in range(col):
+            plot_data = df.iloc[c:c+1,[o,t,p]]
+            sns.barplot(data=plot_data,ax=ax[r,c])
+            ax[r,c].set_xticklabels([])
+            # set y limits
+            # if c ==0:
+            #     ax[r,c].set_ylim(0,24000)
+            # elif c == 1:
+            #     ax[r,c].set_ylim(0,17000)  #17000
+            # elif c == 2:
+            #     ax[r,c].set_ylim(0,6000)  #6000
+            # elif c ==3:
+            #     ax[r,c].set_ylim(0,30000)  #30000
+        o +=1
+        t +=1
+        p +=1
+
+    ax[0, 0].set_title("P1", fontsize=10, fontweight='bold')
+    ax[0, 1].set_title("P2", fontsize=10, fontweight='bold')
+    ax[0, 2].set_title("P3", fontsize=10, fontweight='bold')
+    ax[0, 0].set_ylabel("Group 1A", fontsize=10)
+    ax[1, 0].set_ylabel("Group 1.4A", fontsize=10)
+    ax[2, 0].set_ylabel("Group 1.8A", fontsize=10)
+    ax[3, 0].set_ylabel("Group 2.4A", fontsize=10)
+    ax[4, 0].set_ylabel("Group 3A", fontsize=10)
+    ax[0, 3].set_title("Others", fontsize=10, fontweight='bold')
+    plt.tight_layout(pad=1.9, w_pad=0.3, h_pad=0.3)
+    opc_patch = mpatches.Patch(color=colors[0], label='OPC')
+    tip3p_patch = mpatches.Patch(color=colors[1], label='TIP3P')
+    tip4pew_patch = mpatches.Patch(color=colors[2], label='TIP4P-Ew')
+    ax[0, 3].legend([opc_patch, tip3p_patch, tip4pew_patch], ["OPC", "TIP3P", "TIP4P-Ew"],
+                    bbox_to_anchor=(-0.55, 1.05, 0, 0), loc="lower right",
+                    borderaxespad=1, ncol=3)
+    fig.text(x=0.01,y=0.5,s="NUMBER OF SNAPSHOTS",rotation=90)
+    fig.text(x=0.4,y=0.01,s="TUNNELS & MODELS")
+    save_file = os.path.join(save_location,"tunnel_occurrence_no_scale.png")
+    plt.savefig(save_file)
+
+
+
+
+
+def consolidate_results(tt_results:str,groups_definitions: dict, save_location=None):
     """
-    Sum entry and release for given SC_ID (described in the top of script)
-    :param comparative_analysis_results: Comparative analysis results directory location
-    :type tt_sc_details1_file_loc: str
+    Sum entry and release for given SC_ID
+    :param tt_results: TransportTools results location
+    :param groups_definitions: The definitions of groups formed by SCs.
     :returns consolidated_df Dataframe
     [optional] saving of consolidated df to consolidated_results.csv
     """
+    comparative_analysis_results = os.path.join(tt_results,"statistics","comparative_analysis")
     global sc_ids
     consolidated_df = pd.DataFrame()
     rows, cols = (5, 4)
@@ -302,7 +456,7 @@ def consolidate_results(comparative_analysis_results: str, tt_sc_details1_file_l
                     group_name = tip4pew_contents[row]
                     sc_ids = groups_scs[group_name][0][tunnel_id[col]]
                 # print("TUNNEL ID =", tunnel_id[col])
-                entry_df, release_df = _process_results_for_SCs(sc_ids, tt_sc_details1_file_loc, model=model)
+                entry_df, release_df = _process_results_for_SCs(sc_ids, tt_results, model=model)
                 entry_data = entry_df[i:j]  # To plot entry per tunnel
                 release_data = release_df[i:j]
                 _combined_df = pd.concat([entry_data, release_data], axis=1)
@@ -318,7 +472,7 @@ def consolidate_results(comparative_analysis_results: str, tt_sc_details1_file_l
     # Add the unassigned events to consolidated_df
     unassigned_df = pd.DataFrame()
     unassigned_ind_df = pd.DataFrame()
-    unassigned = _get_unassigned_events(comparative_analysis_results)
+    unassigned = _get_unassigned_events(tt_results=tt_results)
     for group in unassigned:
         num_entry = unassigned[group].Num_entries
         num_release = unassigned[group].Num_releases
@@ -344,7 +498,10 @@ def plot_consolidated_result(consolidated_csv_file:str,unassigned_csv:str, plot_
     import matplotlib.pyplot as plt
     sns.set(style='white')
     fig, ax = plt.subplots(nrows=5, ncols=5, figsize=(12.27, 11.7), dpi=150, sharex='col')
-    plt.suptitle("Events - Consolidated", fontsize=15, fontweight='bold')
+    if plot_normalized is True:
+        plt.suptitle("Events Scalled by TIP3P & Consolidated by tunnels and models", fontsize=15, fontweight='bold')
+    else:
+        plt.suptitle("Events Consolidated by tunnels and models", fontsize=15, fontweight='bold')
     for row in range(rows):
         for col in range(cols):
             _df = consolidated_df.iloc[:, [i, j, k]]
@@ -353,7 +510,7 @@ def plot_consolidated_result(consolidated_csv_file:str,unassigned_csv:str, plot_
                 _df_sum = _df.sum()
                 scaled_df = _df_sum / _df_sum.max()
                 print(scaled_df)
-                scaled_df.plot.bar(ax=ax[row, col], color=colors, sharey='all')
+                scaled_df.plot.bar(ax=ax[row, col], color=colors, sharey='row')
             else:
                 # Consolidated with standard deviation
                 print(_df)
@@ -372,25 +529,25 @@ def plot_consolidated_result(consolidated_csv_file:str,unassigned_csv:str, plot_
         a +=1
         b +=1
         c +=1
-    plt.tight_layout(pad=1.9, w_pad=0.1, h_pad=0.1)
+    plt.tight_layout(pad=3, w_pad=0.1, h_pad=0.1)
     opc_patch = mpatches.Patch(color=colors[0], label='OPC')
     tip3p_patch = mpatches.Patch(color=colors[1], label='TIP3P')
     tip4pew_patch = mpatches.Patch(color=colors[2], label='TIP4P-Ew')
     ax[0, 4].legend([opc_patch, tip3p_patch,tip4pew_patch], ["OPC", "TIP3P", "TIP4P-Ew"],
-                    bbox_to_anchor=(1.1, 1.15, 0, 0), loc="lower right",
+                    bbox_to_anchor=(-0.9, 1.15, 0, 0), loc="lower right",
                     borderaxespad=1, ncol=3)
-    ax[0, 0].set_title("P1", fontsize=15, fontweight='bold')
-    ax[0, 1].set_title("P2", fontsize=15, fontweight='bold')
-    ax[0, 2].set_title("P3", fontsize=15, fontweight='bold')
-    ax[0, 0].set_ylabel("Group 1A", fontsize=15)
-    ax[1, 0].set_ylabel("Group 1.4A", fontsize=15)
-    ax[2, 0].set_ylabel("Group 1.8A", fontsize=15)
-    ax[3, 0].set_ylabel("Group 2.4A", fontsize=15)
-    ax[4, 0].set_ylabel("Group 3A", fontsize=15)
-    ax[0,3].set_title("Others",fontsize=15,fontweight='bold')
-    ax[0, 4].set_title("Unassigned", fontsize=15, fontweight='bold')
-    # ax[4, 2].set_yticklabels([])
-    # ax[4, 1].set_xlabel("Simulation #", fontsize=15)
+    ax[0, 0].set_title("P1", fontsize=10, fontweight='bold')
+    ax[0, 1].set_title("P2", fontsize=10, fontweight='bold')
+    ax[0, 2].set_title("P3", fontsize=10, fontweight='bold')
+    ax[0, 0].set_ylabel("Group 1A", fontsize=10)
+    ax[1, 0].set_ylabel("Group 1.4A", fontsize=10)
+    ax[2, 0].set_ylabel("Group 1.8A", fontsize=10)
+    ax[3, 0].set_ylabel("Group 2.4A", fontsize=10)
+    ax[4, 0].set_ylabel("Group 3A", fontsize=10)
+    ax[0,3].set_title("Others",fontsize=10,fontweight='bold')
+    ax[0, 4].set_title("Unassigned", fontsize=10, fontweight='bold')
+    fig.text(x=0.01, y=0.5, s="NUMBER OF SNAPSHOTS", rotation=90)
+    fig.text(x=0.45, y=0.01, s="TUNNELS & MODELS")
 
 
     if plot_normalized == True:
@@ -510,21 +667,26 @@ def plot_results_per_tunnel(comparative_analysis_results: str, groups_definition
 
 
 def main():
-    comparative_results = "/mnt/gpu/dean/tt/tt_0_9_5/statistics/comparative_analysis"
-    results = "/mnt/gpu/dean/tt/tt_0_9_5/data/super_clusters/details" \
-              "/filtered_super_cluster_details2.txt"
+    tt_results = "/mnt/gpu/dean/tt/tt_0_9_5"
     unasigned = "/home/aravind/PhD_local/dean/figures/transport_tools/unassigned_individual.csv"
-    groups_def = {"P1": [1, 2, 5, 7, 12, 30, 31], "P2": [3, 4, 6, 11, 25, 27, 41, 43, 44, 50, 58, 16],
-                  "P3": [8, 9, 10, 24]}
+
+    # groups_def = {"P1": [1, 2, 5, 7, 12, 30, 31], "P2": [3, 4, 6, 11, 25, 27, 41, 43, 44, 50, 58, 16],
+    #               "P3": [8, 9, 10, 24]}
+    groups_def = {"P1": [1, 2, 5, 7, 12, 30, 31], "P2": [3, 4, 6, 8,9,11,16, 24,25, 27, 41, 43, 44, 50, 58],
+                  "P3": [10
+                  ,29,37,47,69,78]}
     # DEBUG
     # _get_data_from_TT(results)
-    _process_results_for_SCs([1],results,'opc')
-    _get_scids_of_groups(comparative_results, groups_def,show_info=True)
+    # _process_results_for_SCs([1],results,'opc')
+    # _get_scids_of_groups(comparative_results, groups_def,show_info=True)
 
+    # Tunnels before transport events assignment - from comparative analysis results
+    # plot_tunnels_before_assignment(groups_def,comparative_results,'/home/aravind/PhD_local/dean/figures/transport_tools/')
+
+    # Transport events analysis
     # Step1 - Consolidate results - This will generate CSVs of assigned and unassigned events
-    # consolidate_results(comparative_analysis_results=comparative_results,tt_sc_details1_file_loc=results
-    #                     , groups_definitions=groups_def,
-    #                     save_location="/home/aravind/PhD_local/dean/figures/transport_tools/")
+    consolidate_results(tt_results=tt_results, groups_definitions=groups_def,
+                        save_location="/home/aravind/PhD_local/dean/figures/transport_tools/")
 
     # Step2 - Plots
     # PLOT consolidated results
@@ -534,7 +696,7 @@ def main():
 
     # PLOT stacked entry/release
     # plot_results_per_tunnel(comparative_analysis_results=comparative_results, groups_definitions=groups_def
-    #                         , model="tip3p", tt_sc_details2_file_loc=results, unassigned_csv=unasigned)
+    #                         , model="tip4pew", tt_sc_details2_file_loc=results, unassigned_csv=unasigned)
 
 
 if __name__ == '__main__':
