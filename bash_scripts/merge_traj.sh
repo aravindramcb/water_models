@@ -64,10 +64,11 @@ fi
 
 cat > cpptraj.in << EOF1
 parm structure_HMR.parm7
-trajin prod2.nc
-trajin prod3.nc
-autoimage
-rmsd @N,CA,C mass first
+trajin prod/prod2.nc
+trajin prod/prod3.nc
+autoimage origin familiar
+rmsd @N,CA,C mass first out rmsd.dat
+atomicfluct out rmsf.dat byres
 trajout merged.nc netcdf
 run
 EOF1
