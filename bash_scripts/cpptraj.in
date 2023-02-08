@@ -1,8 +1,22 @@
-parm structure.parm7
-trajin prod2.nc
-trajin prod3.nc
-center @CA mass origin
+# ---- active ---
+parm temp/structure_HMR.parm7
+trajin prod/prod2.nc
+trajin prod/prod3.nc
+autoimage origin familiar
 rmsd @N,CA,C mass first
-image origin center familiar
 trajout merged.nc netcdf
-run
+
+
+
+# ------old ----
+#parm structure.parm7
+#trajin prod2.nc
+#trajin prod3.nc
+#center @CA mass origin
+#rmsd @N,CA,C mass first
+#image origin center familiar
+#rajout merged.nc netcdf
+#run
+
+
+
