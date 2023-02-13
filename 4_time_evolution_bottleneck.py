@@ -5,6 +5,9 @@
 # Email : arathi@amu.edu.pl, aravind1233@gmail.com
 import json
 import os
+from collections import defaultdict
+
+import pandas
 import pandas as pd
 from pandas import DataFrame
 
@@ -154,6 +157,66 @@ def plot_bottlenecks(bottleneck_dataframe:DataFrame, group_name:str):
     plt.tight_layout(pad=1.8)
     plt.savefig(f"/home/aravind/PhD_local/dean/figures/bottlenecks/{group_name}.png")
 
+def plot_bottlenecks_overview(tunnels_def:list,group_names:list,simulation_results:str,sc_details_loc:str,save_loc:str):
+    import seaborn as sns
+    import matplotlib.pyplot as plt
+    def process_bottleneck(bottleneck_dataframe):
+        bl_sorted_df = bottleneck_dataframe
+
+        # Prepare data
+        col_names = bl_sorted_df.columns.values.tolist()
+        df_melt = pd.melt(bl_sorted_df.reset_index(), id_vars=['index'], value_vars=col_names)
+        df_melt.columns = ['index', 'Sim_ID', 'Bottleneck']
+
+        # Group data
+        avg_1 = pd.melt(bl_sorted_df.iloc[:, 30:45].reset_index(), id_vars='index', value_vars=col_names[30:45])
+        avg_1.columns = ['index', 'Sim_ID', 'Whole']
+        avg_1_4 = pd.melt(bl_sorted_df.iloc[:, 0:15].reset_index(), id_vars='index', value_vars=col_names[0:15])
+        avg_1_4.columns = ['index', 'Sim_ID', 'Whole']
+        avg_1_8 = pd.melt(bl_sorted_df.iloc[:, 15:30].reset_index(), id_vars='index', value_vars=col_names[15:30])
+        avg_1_8.columns = ['index', 'Sim_ID', 'Whole']
+        avg_2_4 = pd.melt(bl_sorted_df.iloc[:, 45:60].reset_index(), id_vars='index', value_vars=col_names[45:60])
+        avg_2_4.columns = ['index', 'Sim_ID', 'Whole']
+        avg_3 = pd.melt(bl_sorted_df.iloc[:, 60:75].reset_index(), id_vars='index', value_vars=col_names[60:75])
+        avg_3.columns = ['index', 'Sim_ID', 'Whole']
+
+        avg_df = pd.concat([avg_1.loc[:, 'Whole'], avg_1_4.loc[:, 'Whole'], avg_1_8.loc[:, 'Whole'],
+                            avg_2_4.loc[:, 'Whole'], avg_3.loc[:, 'Whole']], axis=1)
+        avg_df.columns = ['1A', '1.4A', '1.8A', '2.4A', '3A']
+
+        return avg_df
+
+    bottlenecks_of_groups=defaultdict(pandas.DataFrame)
+    i = 0
+    for group in group_names:
+        original_ids_dict = get_orig_caver_id(req_sc_ids=tunnels_def[i], initial_sc_details_txt= sc_details_loc,
+                                          simulation_results_dir=simulation_results)
+        bottlenecks = get_bottleneck_radii(scid_orig_caver_ID=original_ids_dict, sim_results_location=simulation_results)
+        bottlenecks_of_groups[group] = bottlenecks
+        i += 1
+
+    average_df = defaultdict(pandas.DataFrame)
+    for group in group_names:
+        avg_df = process_bottleneck(bottlenecks_of_groups[group])
+        average_df[group] = avg_df
+    sns.set(style='whitegrid')
+    fig,axes = plt.subplots(nrows=1,ncols=3,dpi=300,figsize=(10,4))
+    color_pal = {'1A': 'b', '1.4A': 'g', '1.8A': 'r', '2.4A': 'c', '3A': 'm'}
+    box1 = sns.boxplot(ax=axes[0],data=average_df['P1'],palette=color_pal,linewidth=0.5,fliersize=0.5)
+    box1.set_xlabel("P1",fontweight="bold")
+    box1.set_ylabel("Bottleneck radii (Å)")
+    box1.set_ylim(0.7,3.7)
+    box2 = sns.boxplot(ax=axes[1],data=average_df['P2'],palette=color_pal,linewidth=0.5,fliersize=0.5)
+    box2.set_xlabel("P2",fontweight="bold")
+    box2.set_ylim(0.7,3.7)
+    box3 = sns.boxplot(ax=axes[2], data=average_df['P3'],palette=color_pal,linewidth=0.5,fliersize=0.5)
+    box3.set_xlabel("P3",fontweight="bold")
+    box3.set_ylim(0.7,3.7)
+    plt.suptitle("TIME EVOLUTION OF BOTTLENECKS",fontweight="bold")
+    save_location = os.path.join(save_loc+"overall.png")
+    plt.tight_layout()
+    plt.savefig(save_location)
+
 
 if __name__ == '__main__':
 
@@ -164,15 +227,21 @@ if __name__ == '__main__':
     sc_details_file_loc = "/data/aravindramt/dean/tt/tt_0_9_5/data/super_clusters/details" \
                           "/initial_super_cluster_details.txt"
     simulation_results = "/data/aravindramt/dean/tt/minimal_data"
+    save_location = "/home/aravind/PhD_local/dean/figures/bottlenecks/time_evolution/"
 
     # Get the original caver IDs for the given group name (P1,P2,P3) for all simulations
-    original_ids_dict = get_orig_caver_id(req_sc_ids=P3, initial_sc_details_txt= sc_details_file_loc,
-                                          simulation_results_dir=simulation_results)
+    # original_ids_dict = get_orig_caver_id(req_sc_ids=P3, initial_sc_details_txt= sc_details_file_loc,
+    #                                       simulation_results_dir=simulation_results)
 
     # Get bottlenecks for the original Ids for all simulations
-    bottlenecks = get_bottleneck_radii(scid_orig_caver_ID=original_ids_dict, sim_results_location=simulation_results)
+    # bottlenecks = get_bottleneck_radii(scid_orig_caver_ID=original_ids_dict, sim_results_location=simulation_results)
 
     # Plot per group
-    plot_bottlenecks(bottleneck_dataframe=bottlenecks, group_name="P3")
+    # plot_bottlenecks(bottleneck_dataframe=bottlenecks, group_name="P3")
+
+    # Plot overall
+    plot_bottlenecks_overview(tunnels_def=[P1,P2,P3],group_names=["P1","P2","P3"],simulation_results=simulation_results,
+                              sc_details_loc = sc_details_file_loc,save_loc=save_location)
+
 
 
