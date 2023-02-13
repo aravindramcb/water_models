@@ -1,8 +1,8 @@
 # python program to process bottleneck residues from overall results and comparative analysis results
 # -*- coding: utf-8 -*-
 
-# Author: Aravind Thirunavukarasu
-# Email : arathi@amu.edu.pl, aravind1233@gmail.com
+__author__ = 'Aravind Selvaram Thirunavukarasu'
+__email__ = 'arathi@amu.edu.pl, aravind1233@gmail.com'
 
 import os
 from collections import defaultdict
