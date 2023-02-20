@@ -319,7 +319,10 @@ def _process_results_for_sc(required_SCIDs: list, tt_results: str, model: str):
         # location = list(entry.keys()).index(sc_ID)
         #  Add 'entry' column to the dataframe
         sc_id_df = pd.DataFrame(entry[sc_ID])
-        _tmp_df = pd.concat([_tmp_df.convert_dtypes(), sc_id_df.convert_dtypes()], axis=0, ignore_index=True)
+        try:
+            _tmp_df = pd.concat([_tmp_df.convert_dtypes(), sc_id_df.convert_dtypes()], axis=0, ignore_index=True)
+        except ValueError:
+            pass
     # _tmp_df --> Dataframe of Transport events per SC, can be used to plot the highest contributor
     # print(_tmp_df)
     sum_entry_per_replica = _tmp_df.sum(axis=0)
@@ -328,8 +331,11 @@ def _process_results_for_sc(required_SCIDs: list, tt_results: str, model: str):
     # RELEASE
     for sc_ID in required_SCIDs:
         # location = list(entry.keys()).index(sc_ID)
-        sc_id_df = pd.DataFrame(release[sc_ID])
-        _tmp_df = pd.concat([_tmp_df.convert_dtypes(), sc_id_df.convert_dtypes()], axis=0, ignore_index=True)
+        try:
+            sc_id_df = pd.DataFrame(release[sc_ID])
+            _tmp_df = pd.concat([_tmp_df.convert_dtypes(), sc_id_df.convert_dtypes()], axis=0, ignore_index=True)
+        except ValueError:
+            pass
         # print(_tmp_df)
     # _tmp_df --> Dataframe of Transport events per SC, can be used to plot the highest contributor
     sum_release = _tmp_df.sum(axis=0)
@@ -476,7 +482,10 @@ def consolidate_results(tt_results: str, groups_definitions: dict, save_location
                 entry_df, release_df = _process_results_for_sc(sc_ids, tt_results, model=model)
                 entry_data = entry_df[i:j]  # To plot entry per tunnel
                 release_data = release_df[i:j]
-                _combined_df = pd.concat([entry_data, release_data], axis=1)
+                try:
+                    _combined_df = pd.concat([entry_data, release_data], axis=1)
+                except ValueError:
+                    pass
                 # _combined_df.reset_index(inplace=True)
                 print(_combined_df.sum())
                 sum_list = list(_combined_df.sum(axis=1))
@@ -700,8 +709,8 @@ def main():
 
     # groups_def = {"P1": [1, 2, 5, 7, 12, 30, 31], "P2": [3, 4, 6, 11, 25, 27, 41, 43, 44, 50, 58, 16],
     #               "P3": [8, 9, 10, 24]}
-    groups_def = {"P1": [1, 2, 5, 7, 12, 30, 31], "P2": [3, 4, 6, 8, 9, 11, 16, 24, 25, 27, 41, 43, 44, 50, 58],
-                  "P3": [10, 29, 37, 47, 69, 78]}
+    groups_def = {"P1": [1, 2, 5, 7, 12, 30, 31], "P2": [3, 4, 6, 8, 11, 16, 25, 27, 41, 43, 44, 50, 58],
+                  "P3": [10]}
     # DEBUG
     # _get_data_from_TT(results)
     # _process_results_for_SCs([1],results,'opc')
@@ -723,8 +732,9 @@ def main():
                              plot_normalized=False)
 
     # PLOT stacked entry/release
-    plot_results_per_tunnel(tt_results=tt_results, groups_definitions=groups_def
-                            , model="opc", unassigned_csv=unassigned_split)
+    for model in ['opc','tip3p','tip4pew']:
+        plot_results_per_tunnel(tt_results=tt_results, groups_definitions=groups_def
+                            , model=model, unassigned_csv=unassigned_split)
 
 
 if __name__ == '__main__':
