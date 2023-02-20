@@ -76,7 +76,7 @@ def count_frames(tunnels_dict, tt_results_location, save: bool = False, save_loc
     from tqdm import tqdm
     csv_file_location = os.path.join(tt_results_location, "data", "super_clusters", "CSV_profiles", "filtered01")
     other_ids = _get_others_scids(tunnels_dict, tt_results_location)
-    tunnels_dict['others'] = {197}
+    tunnels_dict['others'] = other_ids
     tunnels = defaultdict(pandas.DataFrame)
     for tunnel in tunnels_dict:
         scids = tunnels_dict[tunnel]
