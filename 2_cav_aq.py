@@ -73,10 +73,13 @@ def read_aquaduct_input():
     models = ['opc', 'tip3p', 'tip4pew']
     epoch_list = ["1A", "1.4A", "1.8A", "2.4A", "3A"]
     sim_list = ["1", "2", "3", "4", "5"]
+    water_count = 0
     model_wat = []
     for model in models:
         epoch_wat = []
+        model_water_count=0
         for epoch in epoch_list:
+            epoch_water_count = 0
             sim_wat = []
             for sim in sim_list:
                 aq_results_dir = '/mnt/NAS/dean_water_models/md/' + model + '/' + epoch + '/' + sim + '/aquaduct/'
@@ -86,8 +89,14 @@ def read_aquaduct_input():
                     txt.close()
                     line_number = read.index("Names of traced molecules: WAT\n")
                     sim_wat.append(int(read[line_number + 2].split(sep=':')[1]))
+                    water_count += int(read[line_number + 2].split(sep=':')[1])
+                    epoch_water_count += int(read[line_number + 2].split(sep=':')[1])
+                    model_water_count += int(read[line_number + 2].split(sep=':')[1])
             epoch_wat.append([*sim_wat])
+            print(f"{epoch} - {epoch_water_count}")
         model_wat.append([*epoch_wat])
+        print(f"{model}- {model_water_count}")
+    print(f"Overall waters are {water_count}")
     return model_wat
 
 
