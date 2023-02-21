@@ -182,9 +182,9 @@ def plot_aquaduct_per_group(water_data):
     tip4pew_df.plot(ax=ax[2, 2], kind='bar', y='1.8A', legend=False, rot=0, color='c')
     tip4pew_df.plot(ax=ax[3, 2], kind='bar', y='2.4A', legend=False, rot=0, color='c')
     tip4pew_df.plot(ax=ax[4, 2], kind='bar', y='3A', legend=False, rot=0, color='c')
-    ax[0, 0].set_title("P1", fontsize=15, fontweight='bold')
-    ax[0, 1].set_title("P2", fontsize=15, fontweight='bold')
-    ax[0, 2].set_title("P3", fontsize=15, fontweight='bold')
+    ax[0, 0].set_title("OPC", fontsize=15, fontweight='bold')
+    ax[0, 1].set_title("TIP3P", fontsize=15, fontweight='bold')
+    ax[0, 2].set_title("TIP4P-Ew", fontsize=15, fontweight='bold')
     ax[4, 1].set_xlabel("Simulation Number", fontsize=10, fontweight='bold')
     for axes in ax.flatten():
         axes.tick_params(which='both', size=3, length=5)
@@ -226,10 +226,10 @@ if __name__ == '__main__':
     # AQUA-DUCT
     # ------------------------------
     waters = read_aquaduct_input()
-    # plot_aquaduct_per_group(waters)
-    plot_aquaduct(waters)
+    plot_aquaduct_per_group(waters)
+    # plot_aquaduct(waters)
 
     # CAVER
     # ------------------------------
-    opc, tip3p, tip4pew = get_caver_data(sim_dir)
-    plot_caver(opc, tip3p, tip4pew)
+    # opc, tip3p, tip4pew = get_caver_data(sim_dir)
+    # plot_caver(opc, tip3p, tip4pew)
