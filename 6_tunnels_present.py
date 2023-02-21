@@ -3,7 +3,6 @@
 import os
 import pickle
 from collections import defaultdict
-
 import pandas
 import pandas as pd
 from matplotlib.patches import Patch
@@ -142,6 +141,15 @@ def plot(data: dict = None, dump_file: str = None, save_location: str = None):
             plot_df = pd.concat([opc, tip3p, tip4pew], axis=1)
             print(plot_df)
             sns.barplot(data=plot_df, ax=ax[_row, _col], width=0.5, errorbar='se', capsize=.1, linewidth=1, errwidth=1)
+            if _col == 0:  # P1
+                ax[_row,_col].set_ylim(0, 25000)
+            elif _col == 1:  # P2
+                ax[_row, _col].set_ylim(0, 25000)
+            elif _col == 2:  # P3
+                ax[_row, _col].set_ylim(0, 1250)
+            elif _col == 3:  # Others
+                ax[_row, _col].set_ylim(0, 12500)
+            ax[_row,_col].set_xticklabels("")
             i += 15
             j += 15
             k += 15
@@ -169,11 +177,12 @@ def plot(data: dict = None, dump_file: str = None, save_location: str = None):
 def main():
     tt_results_location = "/data/aravindramt/dean/tt/tt_0_9_5"
     save_location = '/home/aravind/PhD_local/dean/figures/transport_tools/'
-    # groups_def = {"P1": {1, 2, 5, 7, 12, 30, 31}, "P2": {3, 4, 6, 8, 11, 16, 25, 27, 41, 43, 44, 50, 58},
-    #               "P3": {10}}
-    groups_def = {"P1": [31], "P2": [50, 58], "P3": [10]}
-    count_frames(tunnels_dict=groups_def, tt_results_location=tt_results_location, save=True,
-                 save_location=save_location)
+    groups_def = {"P1": {1, 2, 5, 7, 12, 30, 31}, "P2": {3, 4, 6, 8, 11, 16, 25, 27, 41, 43, 44, 50, 58},
+                  "P3": {10}}
+    # count_frames can be used with or without saving dump file, here I have saved a dump because my CSV files are
+    # very large (>4GB), so I cannot wait every time to modify results.
+    # count_frames(tunnels_dict=groups_def, tt_results_location=tt_results_location, save=True,
+    #              save_location=save_location)
     dump_file_name=os.path.join(save_location,'number_frames.pkl')
     plot(dump_file=dump_file_name,save_location=save_location)
 
