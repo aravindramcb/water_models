@@ -1,14 +1,13 @@
-# Python script to process the results of TransportTools and generate plots for Overall results and comparative analysis
+# Python script to process the results of TransportTools
 # -*- coding: utf-8 -*-
 __author__ = 'Aravind Selvaram Thirunavukarasu'
 __email__ = 'arathi@amu.edu.pl, aravind1233@gmail.com'
 
 from collections import defaultdict
-import seaborn as sns
 import pandas as pd
 import os
 from dataclasses import dataclass, field
-from matplotlib import pyplot as plt
+from statistics import mean
 
 
 @dataclass(order=True, repr=True, unsafe_hash=False)
@@ -100,7 +99,7 @@ def _find_sc_per_group(comparative_results_dir: str):
     return parsed_results
 
 
-def _get_scids_of_groups(comparative_analysis_results, groups_definition: dict = None, show_info: bool = False):
+def get_scids_of_groups(comparative_analysis_results, groups_definition: dict = None, show_info: bool = False):
     """
     Gets the SC_IDs of user defined groups if they are present in comparative analysis results.
     :param show_info: Print the SC_IDs selected per user defined group.
@@ -180,9 +179,9 @@ def _get_data_from_tt(tt_super_cluster_details):
     :param tt_super_cluster_details:
     The file from tt_results/data/super_clusters
     /details/filtered_super_clusters_details1.txt
-    :returns super_cluster_IDS , dict(entry_water), dict(release_water)
+    :returns dict(entry,release) of Aquaduct frames per event , dict(entry_water), dict(release_water)
     """
-    super_cluster_ids = []
+    num_frames_aq_water= defaultdict(list)
     entry_water = defaultdict(list)
     release_water = defaultdict(list)
     with open(tt_super_cluster_details, 'r') as results_file:
@@ -193,13 +192,13 @@ def _get_data_from_tt(tt_super_cluster_details):
             _super_cluster_id = []  # Temp super cluster id
             _epoch_water_entry = defaultdict(int)  # Temp water entry
             _epoch_water_release = defaultdict(int)  # Temp water release
+            _epoch_frames_entry = defaultdict(list)
+            _epoch_frames_release = defaultdict(list)
             while not readfile[i].startswith('Super'):
                 i += 1
             if readfile[i].startswith('Super'):
                 sc_id = int(readfile[i].split(" ")[2])
                 _super_cluster_id.append(sc_id)  # Add to tmp list to pass below
-                super_cluster_ids.append(sc_id)  # Add to master list
-
                 # print(readfile[i])
             while not readfile[i].startswith('entry'):  # Move the pointer to entry:
                 if readfile[i].startswith('release'):  # if there is no entry, move to release
@@ -216,8 +215,15 @@ def _get_data_from_tt(tt_super_cluster_details):
                     sim_id = epoch.split(sep=" ")[1]  # omit "from "
                     entry_waters = waters.split(sep=";")
                     # print(entry_waters)
+                    frames = [i.split(sep=',')[2] for i in entry_waters[:-1]]
+                    number_frames_entry = []
+                    for element in frames:
+                        start, end = element.split("->")
+                        number_of_frames = int(end) - int(start)
+                        number_frames_entry.append(number_of_frames)
                     entry_water_count = len(entry_waters) - 1
                     _epoch_water_entry[sim_id] = entry_water_count
+                    _epoch_frames_entry[sim_id] = number_frames_entry
                     # print("ENTRY-"+sim_id+"="+str(entry_water_count))
                 i += 1
 
@@ -233,6 +239,13 @@ def _get_data_from_tt(tt_super_cluster_details):
                     sim_id = epoch.split(sep=" ")[1]
                     release_waters = waters.split(sep=";")
                     # print(release_waters)
+                    frames = [i.split(sep=',')[2] for i in release_waters[:-1]]
+                    number_frames_release = []
+                    for element in frames:
+                        start, end = element.split("->")
+                        number_of_frames = int(end) - int(start)
+                        number_frames_release.append(number_of_frames)
+                    _epoch_frames_release[sim_id] = number_frames_release
                     release_water_count = len(release_waters) - 1
                     _epoch_water_release[sim_id] = release_water_count
                     # print("RELEASE-"+sim_id+"="+str(release_water_count))
@@ -240,14 +253,15 @@ def _get_data_from_tt(tt_super_cluster_details):
                 i += 1
             entry_water[sc_id].append(_epoch_water_entry)
             release_water[sc_id].append(_epoch_water_release)
+            num_frames_aq_water[sc_id].append([_epoch_frames_entry,_epoch_frames_release])
     results_file.close()
-    return super_cluster_ids, entry_water, release_water
+    return num_frames_aq_water, entry_water, release_water
 
 
-def _process_results_for_sc(required_SCIDs: list, tt_results: str, model: str):
+def get_entry_release_events(required_SCIDs: list, tt_results: str, model: str):
     """
     Helper function
-    Give me the required Supercluster IDs and I will give you the input and release number of events for them.
+    Give me the required Supercluster IDs and I will give you the entry and release number of events for them.
     :param tt_results: Location of TransportTools results
     :param model: Water model "OPC" or "TIP3P" or "TIP4PEW" (in small letters)
     :param required_SCIDs: Super Cluster IDs to be processed. Eg., [1] or [1,3,5] etc.,
@@ -345,8 +359,8 @@ def consolidate_results(tt_results: str, groups_definitions: dict, save_location
     group = [1, 2, 3, 4, 5]
 
     # CONSOLIDATE ENTRY + RELEASE PER SIMULATION
-    groups_scs = _get_scids_of_groups(comparative_analysis_results,
-                                      groups_definitions)  # get corresponding SC per group
+    groups_scs = get_scids_of_groups(comparative_analysis_results,
+                                     groups_definitions)  # get corresponding SC per group
     opc_contents = list(groups_scs.keys())[0:5]  # Assuming folder 1-5 is OPC and so on
     tip3p_contents = list(groups_scs.keys())[5:10]
     tip4pew_contents = list(groups_scs.keys())[10:15]
@@ -364,7 +378,7 @@ def consolidate_results(tt_results: str, groups_definitions: dict, save_location
                     group_name = tip4pew_contents[row]
                     sc_ids = groups_scs[group_name][0][tunnel_id[col]]
                 # print("TUNNEL ID =", tunnel_id[col])
-                entry_df, release_df = _process_results_for_sc(sc_ids, tt_results, model=model)
+                entry_df, release_df = get_entry_release_events(sc_ids, tt_results, model=model)
                 entry_data = entry_df[i:j]  # To plot entry per tunnel
                 release_data = release_df[i:j]
                 try:
@@ -424,199 +438,29 @@ def consolidate_results(tt_results: str, groups_definitions: dict, save_location
 
     return consolidated_df
 
+def get_retention_time(tt_results, simulation_results:str, scids:list=None):
+    """
+    Average time spent per aquaduct event. This is to compare how much frames in average an event takes time to pass
+    through a tunnel.
+    """
+    # Read filtered_super_cluster_details_2.txt
+    sc_details_file = os.path.join(tt_results,"data","super_clusters","details","filtered_super_cluster_details2.txt")
+    parsed_results = _get_data_from_tt(sc_details_file)
+    frames= parsed_results[0]
+    directories = [d for d in os.listdir(simulation_results) if os.path.isdir(os.path.join(simulation_results, d))]
+    directories.sort(key=lambda x: (x.split("_")[0][:-1], x))
+    entry_df=pd.DataFrame(index=directories)
+    release_df = pd.DataFrame(index=directories)
+    for scid in scids:
+        current_values = frames[scid][0]
 
-def plot_consolidated_result(consolidated_csv_file: str, unassigned_csv: str, plot_normalized: bool = False):
-    from matplotlib.patches import Patch
-    colors = sns.color_palette('deep', 3)
-    consolidated_df = pd.read_csv(consolidated_csv_file)
-    i, j, k = (0, 20, 40)  #
-    rows, cols = (5, 4)
+        sum_entry = {k: mean(values) for k, values in current_values[0].items()}
+        sum_release = {j: mean(values) for j, values in current_values[1].items()}
+        entry_all = {k: sum_entry.get(k,0) for k in directories}
+        release_all = {k: sum_release.get(k, 0) for k in directories}
+        entry_df[scid] = entry_all.values()
+        release_df[scid] = release_all.values()
 
-    sns.set(style='white')
-    fig, ax = plt.subplots(nrows=5, ncols=5, figsize=(11.69, 8.27), dpi=300, sharex='col')
-    if plot_normalized is True:
-        plt.suptitle("Events Scalled by TIP3P & Consolidated by tunnels and models", fontsize=15, fontweight='bold')
-    else:
-        plt.suptitle("Events Consolidated by tunnels and models", fontsize=15, fontweight='bold')
-    for row in range(rows):
-        for col in range(cols):
-            _df = consolidated_df.iloc[:, [i, j, k]]
-            if plot_normalized:
-                # Normalize by TIP3P
-                _df_sum = _df.sum()
-                scaled_df = _df_sum / _df_sum.max()
-                print(scaled_df)
-                scaled_df.plot.bar(ax=ax[row, col], color=colors, sharey='row')
-            else:
-                # Consolidated with standard deviation
-                print(_df)
-                sns.barplot(data=_df, ax=ax[row, col], width=0.5, errorbar='se', capsize=.1, linewidth=1, errwidth=1)
-            ax[row, col].set_xticklabels([])
-            i += 1
-            j += 1
-            k += 1
-    a, b, c = (0, 5, 10)
-    unassigned_df = pd.read_csv(unassigned_csv)
-    # Plot unassigned
-    for unas_row in range(rows):
-        _unas_df = unassigned_df.iloc[:, [a, b, c]]
-        print(_unas_df)
-        sns.barplot(data=_unas_df, ax=ax[unas_row, 4], width=0.5, errorbar='se', capsize=.1, linewidth=1, errwidth=1)
-        ax[unas_row, 4].set_xticklabels([])
-        a += 1
-        b += 1
-        c += 1
-    plt.tight_layout(pad=3, w_pad=0.1, h_pad=0.1)
-    opc_patch = Patch(color=colors[0], label='OPC')
-    tip3p_patch = Patch(color=colors[1], label='TIP3P')
-    tip4pew_patch = Patch(color=colors[2], label='TIP4P-Ew')
-    ax[0, 4].legend([opc_patch, tip3p_patch, tip4pew_patch], ["OPC", "TIP3P", "TIP4P-Ew"],
-                    bbox_to_anchor=(-0.9, 1.15, 0, 0), loc="lower right",
-                    borderaxespad=1, ncol=3)
-    ax[0, 0].set_title("P1", fontsize=10, fontweight='bold')
-    ax[0, 1].set_title("P2", fontsize=10, fontweight='bold')
-    ax[0, 2].set_title("P3", fontsize=10, fontweight='bold')
-    ax[0, 0].set_ylabel("Group 1A", fontsize=10)
-    ax[1, 0].set_ylabel("Group 1.4A", fontsize=10)
-    ax[2, 0].set_ylabel("Group 1.8A", fontsize=10)
-    ax[3, 0].set_ylabel("Group 2.4A", fontsize=10)
-    ax[4, 0].set_ylabel("Group 3A", fontsize=10)
-    ax[0, 3].set_title("Others", fontsize=10, fontweight='bold')
-    ax[0, 4].set_title("Unassigned", fontsize=10, fontweight='bold')
-    fig.text(x=0.01, y=0.5, s="NUMBER OF SNAPSHOTS", rotation=90)
-    fig.text(x=0.45, y=0.01, s="TUNNELS & MODELS")
-
-    if plot_normalized:
-        plt.savefig('/home/aravind/PhD_local/dean/figures/transport_tools/consolidated_tt_events_scaled.png')
-    else:
-        plt.savefig('/home/aravind/PhD_local/dean/figures/transport_tools/consolidated_tt_mean_se_events.png')
-    # plt.show()
+    return entry_df.mean(axis=1),release_df.mean(axis=1)
 
 
-def plot_results_per_tunnel(tt_results: str, groups_definitions: dict, model: str, unassigned_csv: str):
-    global sc_ids, index
-    sns.set(style='white', font_scale=0.9)
-    colors = {"opc": ['xkcd:dusk', 'xkcd:cool blue'], "tip3p": ['xkcd:dirt', 'xkcd:browny orange'],
-              "tip4pew": ['xkcd:moss green', 'xkcd:seaweed']}
-    fig, ax = plt.subplots(nrows=5, ncols=5, figsize=(11.69, 8.27), dpi=300, sharex='col')
-    plt.suptitle(f"{model}".upper() + " Events", fontsize=15, fontweight='bold')
-    rows, cols = (5, 4)
-    i, j = (0, 5)
-    x_label = [1, 2, 3, 4, 5]
-    comparative_analysis_results = os.path.join(tt_results, 'statistics/comparative_analysis')
-    groups_scs = _get_scids_of_groups(comparative_analysis_results,
-                                      groups_definitions)  # get corresponding SC per group
-    tunnel_id = list(groups_definitions.keys()) + ["others"]
-    opc_contents = list(groups_scs.keys())[0:5]
-    tip3p_contents = list(groups_scs.keys())[5:10]
-    tip4pew_contents = list(groups_scs.keys())[10:15]
-    for row in range(rows):
-        for col in range(cols):
-            if model == "opc":
-                group_name = opc_contents[row]
-                sc_ids = groups_scs[group_name][0][tunnel_id[col]]
-            if model == "tip3p":
-                group_name = tip3p_contents[row]
-                sc_ids = groups_scs[group_name][0][tunnel_id[col]]
-            if model == "tip4pew":
-                group_name = tip4pew_contents[row]
-                sc_ids = groups_scs[group_name][0][tunnel_id[col]]
-            entry_df, release_df = _process_results_for_sc(sc_ids, tt_results, model)
-            data = entry_df[i:j]  # To plot entry per tunnel
-            release_data = release_df[i:j]
-            _combined_df = pd.concat([data, release_data], axis=1)
-            _combined_df.reset_index(inplace=True, drop=True)
-            _combined_df["Total"] = _combined_df.sum(axis=1)
-
-            # using seaborn to plot
-            sns.barplot(ax=ax[row, col], data=_combined_df, x=_combined_df.index, y='Total', color=colors[model][0])
-            sns.barplot(ax=ax[row, col], data=_combined_df, x=_combined_df.index, y='Release_events',
-                        color=colors[model][1])
-
-            # # Set x and y ticks
-            ax[row, col].set_ylabel("")
-            ax[row, col].set_xlabel("")
-            ax[row, col].set_xticks([0, 1, 2, 3, 4])
-            ax[row, col].set_xticklabels(x_label, rotation=0)
-
-        i += 5
-        j += 5
-
-    # Giving explicit index related to Haloalkane Dehalogenase, modify for other proteins.
-    if model == 'opc':
-        index = 0
-    elif model == 'tip3p':
-        index = 25
-    elif model == 'tip4pew':
-        index = 50
-
-    # Load unassigned data
-    unassigned_df = pd.read_csv(unassigned_csv, index_col=0)
-
-    # Plot unassigned
-    for unas_col in range(5):
-        _unas_df = unassigned_df.iloc[:, index:index + 5].T
-        _unas_df["Total"] = _unas_df.sum(axis=1)
-        sns.barplot(ax=ax[unas_col, 4], data=_unas_df, x=_unas_df.index, y='Total', color=colors[model][0])
-        sns.barplot(ax=ax[unas_col, 4], data=_unas_df, x=_unas_df.index, y='Release', color=colors[model][1])
-        ax[unas_col, 4].set_ylabel("")
-        ax[unas_col, 4].set_xlabel("")
-        ax[unas_col, 4].set_xticks([0, 1, 2, 3, 4])
-        ax[unas_col, 4].set_xticklabels(x_label)
-        index += 5
-
-    # Generate Legend
-    plt.tight_layout(pad=1.9, w_pad=0.1, h_pad=0.5)
-    topbar = plt.Rectangle((0, 0), 1, 1, fc=colors[model][1], edgecolor='none')
-    bottombar = plt.Rectangle((0, 0), 1, 1, fc=colors[model][0], edgecolor='none')
-    ax[0, 4].legend([bottombar, topbar], ["ENTRY", "RELEASE"], bbox_to_anchor=(1.1, 1.15, 0, 0), loc="lower right",
-                    borderaxespad=1, ncol=2)
-
-    # Add more details
-    ax[0, 0].set_title("P1", fontsize=15, fontweight='bold')
-    ax[0, 1].set_title("P2", fontsize=15, fontweight='bold')
-    ax[0, 2].set_title("P3", fontsize=15, fontweight='bold')
-    ax[0, 3].set_title("Others", fontsize=15, fontweight='bold')
-    ax[0, 4].set_title("Unassigned", fontsize=15, fontweight='bold')
-    ax[0, 0].set_ylabel("Group 1A", fontsize=15)
-    ax[1, 0].set_ylabel("Group 1.4A", fontsize=15)
-    ax[2, 0].set_ylabel("Group 1.8A", fontsize=15)
-    ax[3, 0].set_ylabel("Group 2.4A", fontsize=15)
-    ax[4, 0].set_ylabel("Group 3A", fontsize=15)
-    ax[4, 2].set_xlabel("Simulation #", fontsize=15)
-    plt.savefig(f'/home/aravind/PhD_local/dean/figures/transport_tools/combined_events_{model}.png')
-    # plt.show()
-
-
-def main():
-    tt_results = "/mnt/gpu/dean/tt/tt_0_9_5"
-    unassigned_split = "/home/aravind/PhD_local/dean/figures/transport_tools/unassigned_events_sep.csv"
-
-    # groups_def = {"P1": [1, 2, 5, 7, 12, 30, 31], "P2": [3, 4, 6, 11, 25, 27, 41, 43, 44, 50, 58, 16],
-    #               "P3": [8, 9, 10, 24]}
-    groups_def = {"P1": [1, 2, 5, 7, 12, 30, 31], "P2": [3, 4, 6, 8, 11, 16, 25, 27, 41, 43, 44, 50, 58],
-                  "P3": [10]}
-    # DEBUG
-    # _get_data_from_TT(results)
-    # _process_results_for_SCs([1],results,'opc')
-    # _get_scids_of_groups(comparative_results, groups_def,show_info=True)
-
-    # Transport events analysis
-    # Step1 - Consolidate results - This will generate CSVs of assigned and unassigned events
-    consolidate_results(tt_results=tt_results, groups_definitions=groups_def,
-                        save_location="/home/aravind/PhD_local/dean/figures/transport_tools/")
-
-    # Step2 - Plots
-    # PLOT consolidated results
-    plot_consolidated_result('~/PhD_local/dean/figures/transport_tools/consolidated_results.csv',
-                             '~/PhD_local/dean/figures/transport_tools/consolidated_unassigned.csv',
-                             plot_normalized=False)
-
-    # PLOT stacked entry/release
-    for model in ['opc', 'tip3p', 'tip4pew']:
-        plot_results_per_tunnel(tt_results=tt_results, groups_definitions=groups_def
-                                , model=model, unassigned_csv=unassigned_split)
-
-
-if __name__ == '__main__':
-    main()
