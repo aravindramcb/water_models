@@ -7,7 +7,7 @@ import seaborn as sns
 import pandas as pd
 import matplotlib.pyplot as plt
 import os
-from libs import s7_transport_events_analysis as s7
+from libs import transport_events_analysis as tt_events
 
 
 def plot_consolidated_result(consolidated_csv_file: str, unassigned_csv: str, plot_normalized: bool = False):
@@ -61,14 +61,14 @@ def plot_consolidated_result(consolidated_csv_file: str, unassigned_csv: str, pl
     ax[0, 0].set_title("P1", fontsize=10, fontweight='bold')
     ax[0, 1].set_title("P2", fontsize=10, fontweight='bold')
     ax[0, 2].set_title("P3", fontsize=10, fontweight='bold')
-    ax[0, 0].set_ylabel("Group 1A", fontsize=10)
-    ax[1, 0].set_ylabel("Group 1.4A", fontsize=10)
-    ax[2, 0].set_ylabel("Group 1.8A", fontsize=10)
-    ax[3, 0].set_ylabel("Group 2.4A", fontsize=10)
-    ax[4, 0].set_ylabel("Group 3A", fontsize=10)
+    ax[0, 0].set_ylabel("Group 1", fontsize=10)
+    ax[1, 0].set_ylabel("Group 2", fontsize=10)
+    ax[2, 0].set_ylabel("NUMBER OF FRAMES \n\n  Group 3", fontsize=10)
+    ax[3, 0].set_ylabel("Group 4", fontsize=10)
+    ax[4, 0].set_ylabel("Group 5", fontsize=10)
     ax[0, 3].set_title("Others", fontsize=10, fontweight='bold')
     ax[0, 4].set_title("Unassigned", fontsize=10, fontweight='bold')
-    fig.text(x=0.01, y=0.5, s="NUMBER OF SNAPSHOTS", rotation=90)
+    # fig.text(x=0.01, y=0.5, s="NUMBER OF SNAPSHOTS", rotation=90)
     fig.text(x=0.45, y=0.01, s="TUNNELS & MODELS")
 
     if plot_normalized:
@@ -89,8 +89,8 @@ def plot_results_per_tunnel(tt_results: str, groups_definitions: dict, model: st
     i, j = (0, 5)
     x_label = [1, 2, 3, 4, 5]
     comparative_analysis_results = os.path.join(tt_results, 'statistics/comparative_analysis')
-    groups_scs = s7.get_scids_of_groups(comparative_analysis_results,
-                                        groups_definitions)  # get corresponding SC per group
+    groups_scs = tt_events.get_scids_of_groups(comparative_analysis_results,
+                                               groups_definitions)  # get corresponding SC per group
     tunnel_id = list(groups_definitions.keys()) + ["others"]
     opc_contents = list(groups_scs.keys())[0:5]
     tip3p_contents = list(groups_scs.keys())[5:10]
@@ -106,7 +106,7 @@ def plot_results_per_tunnel(tt_results: str, groups_definitions: dict, model: st
             if model == "tip4pew":
                 group_name = tip4pew_contents[row]
                 sc_ids = groups_scs[group_name][0][tunnel_id[col]]
-            entry_df, release_df = s7.get_entry_release_events(sc_ids, tt_results, model)
+            entry_df, release_df = tt_events.get_entry_release_events(sc_ids, tt_results, model)
             data = entry_df[i:j]  # To plot entry per tunnel
             release_data = release_df[i:j]
             _combined_df = pd.concat([data, release_data], axis=1)
@@ -172,7 +172,7 @@ def plot_results_per_tunnel(tt_results: str, groups_definitions: dict, model: st
     plt.savefig(f'/home/aravind/PhD_local/dean/figures/transport_tools/combined_events_{model}.png')
     # plt.show()
 
-def plot_retention_time_overview(tt_results, scids,sim_results,model:str="overall", save_location:str=None):
+def plot_transit_time_overview(tt_results, scids, sim_results, model:str= "overall", save_location:str=None):
     from collections import defaultdict
     sns.set(style='white', font_scale=0.8,context='paper')
     overall_color = sns.color_palette('deep', 3)
@@ -181,7 +181,8 @@ def plot_retention_time_overview(tt_results, scids,sim_results,model:str="overal
 
     times = defaultdict(pd.DataFrame)
     for scid in scids:
-        rt = s7.get_retention_time(tt_results=tt_results,scids=scids[scid],simulation_results=sim_results)
+        result = tt_events.get_transit_time_single(tt_results=tt_results, scids=scids[scid], simulation_results=sim_results)
+        rt = result[0]  # overall result
         times[scid] = rt
     tunnel_names = list(scids.keys())
     cols,rows = (3,5)
@@ -248,20 +249,138 @@ def plot_retention_time_overview(tt_results, scids,sim_results,model:str="overal
         name = f"{model}.png"
         save_file = os.path.join(save_location,name)
     plt.savefig(save_file)
+def histogram_count_transit_time(tt_results:str, sim_results:str, gd:dict):
+    """
+    Process data for histogram and plot transit time per event.
+    1 frame = 20ps
+    transit time per event = number of frames per event * 20 for a single entry or release event
+    :param tt_results: Location of Transport tools results
+    :param sim_results: Location of simulation results
+    :return: saves a plot of histogram in the specified location
+    """
+    frames = tt_events.get_transit_time_single(tt_results=tt_results, simulation_results=sim_results, groups_definitions=gd,
+                                               frame_numbers=False)
+    combined = frames[0]
+    names = list(combined.keys())
+    overall_color = sns.color_palette('deep', 3)
+    row, col = (5, 3)
+    sns.set_context(context="paper", font_scale=1)
+    fig,ax = plt.subplots(nrows=row,ncols=col,figsize=(10,8),dpi=300,sharey="row")
+    plt.suptitle("Water transit time distribution - P1 tunnel",fontweight="bold")
+    grp_num = 0
+    for r in range(row):
+        for c in range(col):
+            group_name = names[grp_num]
+            data = combined[group_name]
+            time_in_ps = [x * 10 for x in data]
+            print(f" {group_name} \nrow_col = {r},{c}")
+            top_10_slow = sorted(time_in_ps,reverse=True)[:10]
+            top_10_fast = sorted(time_in_ps)[:10]
+            print(f"TOP 10 slowest \n ------------- \n {top_10_slow}"
+                  f"\n"
+                  f"TOP 10 fastest \n ------------- \n {top_10_fast}")
+            slowest=f"Slowest = {max(time_in_ps)}ps"
+            fastest = f"Fastest = {min(time_in_ps)}ps"
+            if "opc" in group_name:
+                color = overall_color[0]
+            elif "tip3p" in group_name:
+                color = overall_color[1]
+            else:
+                color = overall_color[2]
+            sns.histplot(data=time_in_ps, ax=ax[r, c], stat="count", binwidth=10, binrange=(0, 400)
+                         ,  color=color,edgecolor='black', log_scale=False)
+            ax[r,c].text(0.65,0.9,slowest,transform=ax[r,c].transAxes,va='top',fontsize=7)
+            # ax[r,c].text(0.65,0.9,fastest,transform=ax[r,c].transAxes,va='center',fontsize=7)
+            ax[r,c].set_xlim(0,400)
+            ylabel = ax[r,c].get_ylabel()
+            ax[r,c].set_ylabel("")
+            if ylabel == 'Percent':
+                ax [r,c].set_ylim(0,30)
+            grp_num += 1
+    if ylabel == 'Count':
+        y_limits_count_plot = [120,175,1500,6800,15200]
+        for r in range(row):
+            for c in range(3):
+                lim = (0,y_limits_count_plot[r])
+                ax[r,c].set_ylim(lim)
+    ax[4, 1].set_xlabel("Time (ps)")
+    ax[0, 0].set_title("OPC", fontweight='bold')
+    ax[0, 1].set_title("TIP3P", fontweight='bold')
+    ax[0, 2].set_title("TIP4P-Ew", fontweight='bold')
+    ax[0, 0].set_ylabel("Group 1")
+    ax[1, 0].set_ylabel("Group 2")
+    ax[2, 0].set_ylabel(ylabel + "\n\nGroup 3" )
+    ax[3, 0].set_ylabel("Group 4")
+    ax[4, 0].set_ylabel("Group 5")
+    plt.tight_layout()
+    plt.savefig(f"/home/aravind/PhD_local/dean/figures/retention_time/hist_trt_{ylabel}.png")
 
+
+def histogram_matching_frames(tt_results:str,sim_results:str,gd:dict):
+    """
+    Plot the histogram of frame numbers for events when it's occurring. So, if more than one water
+    is entering or releasing from the tunnel, the count increases per histogram bin.
+    :param tt_results: Location of Transport tools results
+    :param sim_results: Location of simulation results
+    :return: saves a plot of histogram in the specified location
+    """
+    frames = tt_events.get_transit_time_single(tt_results=tt_results, simulation_results=sim_results, groups_definitions=gd,
+                                               frame_numbers=True)
+    combined = frames[0]
+    names = list(combined.keys())
+    overall_color = sns.color_palette('deep', 3)
+    row, col = (5, 3)
+    fig,ax = plt.subplots(nrows=row,ncols=col,figsize=(10,8),dpi=300)
+    sns.set_context(context="paper",font_scale=1)
+    plt.suptitle("Matching frames of event occurrences - P1 tunnel",fontweight="bold")
+    grp_num = 0
+    for r in range(row):
+        for c in range(col):
+            group_name = names[grp_num]
+            data = combined[group_name]
+            # time_in_ps = [x * 20 for x in data]
+            print(f" {group_name} \nrow_col = {r},{c}")
+            # print(time_in_ps)
+            if "opc" in group_name:
+                color = overall_color[0]
+            elif "tip3p" in group_name:
+                color = overall_color[1]
+            else:
+                color = overall_color[2]
+            sns.histplot(data=data, ax=ax[r, c], stat="count", binwidth=1,binrange=(0, 20000), color=color,
+                         edgecolor='black')
+            # sns.countplot(data=data,ax=ax[r,c])
+            ylabel = ax[r,c].get_ylabel()
+            ax[r,c].set_ylabel("")
+            grp_num += 1
+    ax[4, 1].set_xlabel("Frame Number")
+    ax[0, 0].set_title("OPC", fontweight='bold')
+    ax[0, 1].set_title("TIP3P", fontweight='bold')
+    ax[0, 2].set_title("TIP4P-Ew", fontweight='bold')
+    ax[0, 0].set_ylabel("Group 1")
+    ax[1, 0].set_ylabel("Group 2")
+    ax[2, 0].set_ylabel(ylabel + "\n\n Group 3" )
+    ax[3, 0].set_ylabel("Group 4")
+    ax[4, 0].set_ylabel("Group 5")
+    plt.tight_layout()
+    plt.savefig(f"/home/aravind/PhD_local/dean/figures/retention_time/hist_frames_{ylabel}.png")
+    print(frames)
 
 def main():
     tt_results = "/mnt/gpu/dean/tt/tt_0_9_5"
     unassigned_split = "/home/aravind/PhD_local/dean/figures/transport_tools/unassigned_events_sep.csv"
     groups_def = {"P1": [1, 2, 5, 7, 12, 30, 31], "P2": [3, 4, 6, 8, 11, 16, 25, 27, 41, 43, 44, 50, 58],
                   "P3": [10]}
+    main_tunnel = {"P1": [1, 2, 5, 7, 12, 30, 31]}
+    simulation_results = "/data/aravindramt/dean/tt/minimal_data"
     sim_results = "/data/aravindramt/dean/md/simulations/"
     save_loc = "/home/aravind/PhD_local/dean/figures/retention_time"
+
     # Generate data
     # Step1 - Consolidate events - This will generate CSVs of assigned and unassigned events
     # s7.consolidate_results(tt_results=tt_results, groups_definitions=groups_def,
     #                        save_location="/home/aravind/PhD_local/dean/figures/transport_tools/")
-
+    #
     # Step2 - Plots
     # PLOT consolidated events results
     # plot_consolidated_result('~/PhD_local/dean/figures/transport_tools/consolidated_results.csv',
@@ -273,12 +392,8 @@ def main():
     #     plot_results_per_tunnel(tt_results=tt_results, groups_definitions=groups_def
     #                             , model=model, unassigned_csv=unassigned_split)
 
-    # Plot retention time
-    # overall
-    # plot_retention_time_overview(tt_results, groups_def, sim_results, save_location=save_loc)
-    # by models
-    for model in ['opc', 'tip3p', 'tip4pew']:
-        plot_retention_time_overview(tt_results,groups_def,sim_results,model=model,save_location=save_loc)
-
+    # Plot transit time
+    # histogram_count_transit_time(tt_results=tt_results, sim_results=simulation_results, gd=main_tunnel)
+    # histogram_matching_frames(tt_results=tt_results, sim_results=simulation_results, gd=main_tunnel)
 if __name__ == '__main__':
     main()
