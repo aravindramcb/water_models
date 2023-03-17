@@ -6,6 +6,7 @@ from collections import defaultdict
 import pandas
 import pandas as pd
 from matplotlib.patches import Patch
+from matplotlib.ticker import FormatStrFormatter
 
 
 def _process_csv(csv_file):
@@ -122,7 +123,7 @@ def plot(data: dict = None, dump_file: str = None, save_location: str = None):
         raise FileNotFoundError(f"{dump_file} not found")
     colors = sns.color_palette('deep', 3)
     row, col = (5, 4)
-    fig, ax = plt.subplots(nrows=row, ncols=col, figsize=(8.27, 11.7), dpi=300, sharex='col')
+    fig, ax = plt.subplots(nrows=row, ncols=col, figsize=(11.7, 8.9), dpi=300, sharex='col')
     sns.set(style='whitegrid')
     sns.set_palette('deep')
     plt.suptitle("TUNNEL OCCURRENCES BEFORE ASSIGNMENT", fontsize=12, fontweight='bold')
@@ -153,6 +154,8 @@ def plot(data: dict = None, dump_file: str = None, save_location: str = None):
             i += 15
             j += 15
             k += 15
+    ax[4,2].yaxis.set_major_formatter(FormatStrFormatter('%.0f'))
+    # ax[4,2].set_ylim(0,15)
     ax[0, 0].set_title("P1", fontsize=10, fontweight='bold')
     ax[0, 1].set_title("P2", fontsize=10, fontweight='bold')
     ax[0, 2].set_title("P3", fontsize=10, fontweight='bold')
@@ -181,8 +184,8 @@ def main():
                   "P3": {10}}
     # count_frames can be used with or without saving dump file, here I have saved a dump because my CSV files are
     # very large (>4GB), so I cannot wait every time to modify results.
-    # count_frames(tunnels_dict=groups_def, tt_results_location=tt_results_location, save=True,
-    #              save_location=save_location)
+    count_frames(tunnels_dict=groups_def, tt_results_location=tt_results_location, save=True,
+                 save_location=save_location)
     dump_file_name=os.path.join(save_location,'number_frames.pkl')
     plot(dump_file=dump_file_name,save_location=save_location)
 
