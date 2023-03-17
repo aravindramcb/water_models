@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # python program to process bottleneck residues from overall results and comparative analysis results
 # -*- coding: utf-8 -*-
 
@@ -122,12 +123,12 @@ def plot(scids: list, bottleneck:dict, save_location:str, group_name:str=None ):
     plt.savefig(to_save, dpi=300)
     plt.close()
 
+
 def plot_top_ten_subplots(comparative_result:dict,group_name:str,save_loc:str) -> None:
     """
     Plot subplots of comparative analysis results, only for top 5 for the group.
     :param comparative_result: Dictionary contating comparative analysis results
     :param group_name: Name of the group being processed. eg, P1, P2, P3 ...
-    :param save_name: file name to save
     :return: Plots figure
     """
     sns.set(style='white')
