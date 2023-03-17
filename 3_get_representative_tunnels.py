@@ -111,22 +111,21 @@ def print_details(scid, cutoff: float = 0.05) -> dict[str, List[int]]:
             if number_of_hits < 5:
                 logger.info("Number of hits less than 5, searching in next MD-Tag")
                 continue
-            else:
-                break
+            # else:
+            #     break
         return selected, number_of_hits
 
     selected, number_hits = _search_frame()
 
-
-    while not number_hits >= 10:
-        if number_hits != 0 and number_hits >= 10:
+    while not number_hits >= 5:
+        if number_hits != 0 and number_hits >= 5:
             logger.info(f"Number hits is {number_hits}")
             break
         else:
             cutoff = cutoff + 0.05
 
             logger.info(f"None found with current cutoff of 0.05, extending it by 0.05 and searching with {cutoff}")
-            selected,number_hits=_search_frame()
+            selected, number_hits = _search_frame()
             print(f"NUMBER OF HITS IS {number_hits}")
     return selected
 
@@ -150,30 +149,30 @@ def save_representative_tunnel(scid: int, frame_numbers: list[int], md_labels: l
         mol_system.show_tunnels_passing_filter(scid, filters, out, md_labels=[md_tag],
                                                snap_id_list=frames, trajectory=False)
 
-cmd.group('',members="")
+
 def find_frame_and_save_visualization(sc_ids: list[int], save_dir_name: str = 'rep_clusters'):
     sim_frames: dict[int, dict[str, Any]] = {}
-    for cluster in sc_ids:
-        selected = print_details(cluster)
-        sim_frames[cluster] = selected
-    for cluster in sim_frames:
-        # md_tag = list(sim_frames[cluster].keys())[0]  # First md_tag
-        md_tags = list(sim_frames[cluster].keys())
-        # frame_number = sim_frames[cluster][md_tag][0]  # First value of the md_tag
-        frame_numbers = list(sim_frames[cluster].values())
-        save_representative_tunnel(cluster, frame_numbers, md_tags, f"{save_dir_name}/{cluster}")
+    for scid in sc_ids:
+        selected = print_details(scid)
+        sim_frames[scid] = selected
+    for scid in sim_frames:
+        # md_tag = list(sim_frames[scid].keys())[0]  # First md_tag
+        md_tags = list(sim_frames[scid].keys())
+        # frame_number = sim_frames[scid][md_tag][0]  # First value of the md_tag
+        frame_numbers = list(sim_frames[scid].values())
+        save_representative_tunnel(scid, frame_numbers, md_tags, f"{save_dir_name}/{scid}")
+
 
 
 if __name__ == '__main__':
     # Visualize representative superclusters for P1, P2 and P3 tunnels
-    P1_scs = [1, 2, 5, 7, 12,  30, 31, 42]
-    P2_scs = [3, 4, 6, 11, 16,25, 27, 41, 44, 43, 50, 58]
+    P1_scs = [1, 2, 5, 7, 12, 30, 31, 42]
+    P2_scs = [3, 4, 6, 11, 16, 25, 27, 41, 44, 43, 50, 58]
     P3_scs = [8, 9, 10, 24]
 
     # Automated saving the first match
-    #Usage - find_frame_and_save_visualization([list of sc ids], save_dir_name)
-    find_frame_and_save_visualization(P1_scs, "rep_tunnels/P1")
-
+    # Usage - find_frame_and_save_visualization([list of sc ids], save_dir_name)
+    # find_frame_and_save_visualization(P1_scs, "rep_tunnels/P1")
     # MANUAL SEARCH FOR FRAME NUMBER AND MD_TAG FOR GIVEN SCID:
     # result = print_details(SC_ID, cutoff = new_cutoff)
     # result = print_details(17, cutoff=0.5)
@@ -184,3 +183,4 @@ if __name__ == '__main__':
     # md_tag = "3A_opc_1"
     # save_dir_name = "P2"
     # save_representative_tunnel(super_cluster_id, frame_number, md_tag, save_dir_name)
+
