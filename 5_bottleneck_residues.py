@@ -19,7 +19,8 @@ def process_bottleneck(results_file:str, scids:list, frequency_cutoff: float = 0
     :param scids: SuperCluster IDs to parse bottlenecks
     :param frequency_cutoff: Cutoff to consider the residue number if it has to be processed.
     """
-    bottlenecks = defaultdict(dict)
+    # bottlenecks = defaultdict(dict)
+    bottlenecks = []
     with open(results_file, "r") as infile:
         readfile = infile.readlines()
         for line in readfile[18:]:
@@ -34,7 +35,8 @@ def process_bottleneck(results_file:str, scids:list, frequency_cutoff: float = 0
                 filtered_freq = {residue: frequency for residue, frequency in res_freq.items() if
                              frequency >= frequency_cutoff}
             if sc_id in scids:
-                bottlenecks[sc_id] = filtered_freq
+                # bottlenecks[sc_id] = filtered_freq
+                bottlenecks=bottlenecks+list(filtered_freq.keys())
     return bottlenecks
 
 
@@ -177,9 +179,9 @@ if __name__ == '__main__':
 
     result_file = "/data/aravindramt/dean/tt/tt_0_9_5_bottleneck/statistics/" \
                   "2-filtered_tunnels_statistics_bottleneck_residues.txt"
-    p1 = [1,2,5,7,12,16,30,31]
-    p2 = [3,4,6,11,25,27,41,44,43,50,58]
-    p3 = [8,9,10,24]
+    p1 = [1, 2, 5, 7, 12, 30, 31]
+    p2 = [3, 4, 6, 8, 11, 16, 25, 27, 41, 43, 44, 50, 58]
+    p3 = [10]
 
     # From overall result - by tunnel
     save_location = "/home/aravind/PhD_local/dean/figures/bottlenecks/residues/p3"
@@ -188,13 +190,14 @@ if __name__ == '__main__':
 
     # Comparative result - by tunnel
     # save_location_comparative = "/home/aravind/PhD_local/dean/figures/bottlenecks/"
-    comparative_analysis_results = "/data/aravindramt/dean/tt/tt_0_9_5_bottleneck/statistics/comparative_analysis"
-    result = get_comparative_results(comparative_analysis_results,p3)
+    comparative_analysis_results = "/data/aravindramt/result = {defaultdict: 15} defaultdict(<class 'dict'>, {'tip3p_2.4': ['146', '173', '138', '169', '242', '269', '270', '142', '165', '149', '172', '170', '103', '243', '268', '145', '141', '206', '168', '39', '38', '173', '142', '172', '145', '169', '141', '242', '149', '146', '138'... Viewdean/tt/tt_0_9_5_bottleneck/statistics/comparative_analysis"
+    result = get_comparative_results(comparative_analysis_results,p1)
+    print(result)
     # plot_comparative(result,save_location_comparative)
 
     # Subplots by tunnel
-    save_location_subplots = "/home/aravind/PhD_local/dean/figures/bottlenecks/"
-    plot_top_ten_subplots(result,group_name="P3",save_loc=save_location_subplots)
+    # save_location_subplots = "/home/aravind/PhD_local/dean/figures/bottlenecks/"
+    # plot_top_ten_subplots(result,group_name="P3",save_loc=save_location_subplots)
 
     # Subplots by model
 
