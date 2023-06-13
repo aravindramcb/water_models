@@ -102,7 +102,7 @@ def _find_sc_per_group(comparative_results_dir: str):
 
 def get_scids_of_groups(comparative_analysis_results, groups_definition: dict = None, show_info: bool = False):
     """
-    Gets the SC_IDs of user defined groups if they are present in comparative analysis results.
+    Gets the SC_IDs of user defined groups only if they are present in comparative analysis results.
     :param show_info: Print the SC_IDs selected per user defined group.
     :param comparative_analysis_results: results dir location
     :param groups_definition: User defined definition
@@ -173,7 +173,7 @@ def _get_unassigned_events(tt_results: str):
     return unassigned
 
 
-def _get_data_from_tt(tt_super_cluster_details,debug:bool=False,frame_numbers:bool=False):
+def _get_data_from_tt(tt_super_cluster_details, debug:bool = False,frame_numbers:bool=False):
     """
     Helper function to parse the details from filtered_supercluster_details2.txt file and returns the entry and release
     len() for every sim #.
@@ -285,8 +285,8 @@ def _get_data_from_tt(tt_super_cluster_details,debug:bool=False,frame_numbers:bo
                         _epoch_water_release[sim_id] = release_water_count
                         if frame_numbers:
                             _epoch_frame_numbers_release[sim_id]=frame_numbers_release
-                    else:
-                        # print("There is no tunnel cluster for the release event below :  ")
+                    if debug:
+                        print("There is no tunnel cluster for the release event below :  ")
                         print(f"[RELEASE] - SCID {sc_id} - {sim_id} - {release_water_count}")
                     # print("RELEASE-"+sim_id+"="+str(release_water_count))
                 #     One cycle of entry and release gets over here, i+1 to goto next supercluster ID
@@ -407,25 +407,25 @@ def consolidate_results(tt_results: str, groups_definitions: dict, save_location
 
     # CONSOLIDATE ENTRY + RELEASE PER SIMULATION
     groups_scs = get_scids_of_groups(comparative_analysis_results,
-                                     groups_definitions)  # get corresponding SC per group
+                                     groups_definitions)  # get corresponding SC per group which are water transporters
 
-    opc_contents = list(groups_scs.keys())[0:5]  # Assuming folder 1-5 is OPC and so on
-    tip3p_contents = list(groups_scs.keys())[5:10]
-    tip4pew_contents = list(groups_scs.keys())[10:15]
+    opc_folders = list(groups_scs.keys())[0:5]  # Assuming folder 1-5 is OPC and so on
+    tip3p_folders = list(groups_scs.keys())[5:10]
+    tip4pew_folders = list(groups_scs.keys())[10:15]
     for model in ['opc', 'tip3p', 'tip4pew']:
-        i, j = (0, 5)
+        i, j = (0, 5)  # parse data from 5 simulations
         for row in range(rows):
             for col in range(cols):
                 if model == "opc":
-                    group_name = opc_contents[row]
+                    group_name = opc_folders[row]
                     print(f"For group {group_name} {tunnel_id[col]}")
                     sc_ids = groups_scs[group_name][0][tunnel_id[col]]
                 if model == "tip3p":
-                    group_name = tip3p_contents[row]
+                    group_name = tip3p_folders[row]
                     print(f"For group {group_name}")
                     sc_ids = groups_scs[group_name][0][tunnel_id[col]]
                 if model == "tip4pew":
-                    group_name = tip4pew_contents[row]
+                    group_name = tip4pew_folders[row]
                     print(f"For group {group_name}")
                     sc_ids = groups_scs[group_name][0][tunnel_id[col]]
                 # print("TUNNEL ID =", tunnel_id[col])
@@ -437,7 +437,7 @@ def consolidate_results(tt_results: str, groups_definitions: dict, save_location
                 except ValueError:
                     pass
                 # _combined_df.reset_index(inplace=True)
-                # print(_combined_df.sum())
+                print(_combined_df.sum())
                 sum_list = list(_combined_df.sum(axis=1))
                 # print(sum_list)
                 col_name = tunnel_id[col] + "_" + model + "_" + str(group[row])
@@ -470,12 +470,14 @@ def consolidate_results(tt_results: str, groups_definitions: dict, save_location
     models = ['opc', 'tip3p', 'tip4pew']
     current_model = 0
     group_number = 0
+    # iterate through 75 folders
     for k in range(0, len(sum_unassigned_df), 5):
         chunk = sum_unassigned_df[k:k + 5]
         chunk = chunk.reset_index(drop=True)
         chunk = chunk.to_frame()
         chunk.columns = [f'{models[current_model]}_{group_number + 1}']
         unassigned_grouped_by_group = pd.concat([unassigned_grouped_by_group, chunk], axis=1)
+        # index 0-20 is OPC 20-45 is TIP3P, 45-75 is TIP4P-Ew
         if k == 20:
             current_model += 1
         elif k == 45:
@@ -508,10 +510,10 @@ def get_transit_time_single(tt_results, simulation_results:str, groups_definitio
     entry_dict=defaultdict(list)
     release_dict = defaultdict(list)
     comparative_results_loc = os.path.join(tt_results,"statistics/comparative_analysis")
-    name_of_group = list(groups_definitions.keys())[0]
-    scids = groups_definitions[name_of_group]
+    name_of_tunnel = list(groups_definitions.keys())[0]
+    scids = groups_definitions[name_of_tunnel]
     scids_in_group = get_scids_of_groups(comparative_analysis_results=comparative_results_loc,
-                                         groups_definition=groups_definitions)
+                                         groups_definition=groups_definitions,show_info=True)
     for scid in scids:
         current_values = frames[scid]
 
@@ -522,12 +524,17 @@ def get_transit_time_single(tt_results, simulation_results:str, groups_definitio
                     combined_values[key].extend(value)
         combined_values_all = {k: combined_values.get(k,0) for k in directories}
         index = 0
+
+        # names are the suffixes of the group names, my full group names are -['opc_1', 'opc_1.4', 'opc_1.8', 'opc_2.4',
+        # 'opc_3', 'tip3p_1', 'tip3p_1.4', 'tip3p_1.8', 'tip3p_2.4', 'tip3p_3', 'tip4pew_1', 'tip4pew_1.4',
+        # 'tip4pew_1.8', 'tip4pew_2.4', 'tip4pew_3']
+
         names = ["1", "1.4", "1.8", "2.4", "3"]
         group_number = 0
         for i in range(15):
-            group_name = directories[index].split("_")[1] + "_" + names[group_number]
+            group_name = directories[index].split("_")[1] + "_" + str(names[group_number])
             # condition to check if the SCID is present in current comparative_analysis group
-            if scid in scids_in_group[group_name][0][name_of_group]:
+            if scid in scids_in_group[group_name][0][name_of_tunnel]:
                 keys = directories[index:index+5]
                 values =[]
                 entry = []
@@ -549,7 +556,7 @@ def get_transit_time_single(tt_results, simulation_results:str, groups_definitio
                 else:
                     pass
             index += 5  # move to next 5 simulations
-            if index % 15 in list(range(0, 5)):  # Move to next group
+            if index % 15 in list(range(0, 5)):  # Move to next group / there are 15 simulations per water model
                 group_number += 1
 
     return combined_dict,entry_dict,release_dict
