@@ -531,6 +531,7 @@ def get_transit_time_single(tt_results, simulation_results:str, groups_definitio
 
         names = ["1", "1.4", "1.8", "2.4", "3"]
         group_number = 0
+        # range is 15 because i have 5 groups with 3 models per tunnel, so 15 total boxes in the plot.
         for i in range(15):
             group_name = directories[index].split("_")[1] + "_" + str(names[group_number])
             # condition to check if the SCID is present in current comparative_analysis group
@@ -556,7 +557,8 @@ def get_transit_time_single(tt_results, simulation_results:str, groups_definitio
                 else:
                     pass
             index += 5  # move to next 5 simulations
-            if index % 15 in list(range(0, 5)):  # Move to next group / there are 15 simulations per water model
+            # Move to next group / there are 15 simulations per water model and // 5 groups, which is why range(0,5)
+            if index % 15 in list(range(0, 5)):
                 group_number += 1
 
     return combined_dict,entry_dict,release_dict
