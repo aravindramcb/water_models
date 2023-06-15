@@ -183,7 +183,7 @@ def plot_transit_time_overview(tt_results, scids, sim_results, model:str= "overa
 
     times = defaultdict(pd.DataFrame)
     for scid in scids:
-        result = tt_events.get_transit_time_single(tt_results=tt_results, scids=scids[scid], simulation_results=sim_results)
+        result = tt_events.get_transit_time(tt_results=tt_results, scids=scids[scid], simulation_results=sim_results)
         rt = result[0]  # overall result
         times[scid] = rt
     tunnel_names = list(scids.keys())
@@ -260,29 +260,36 @@ def histogram_count_transit_time(tt_results:str, sim_results:str, gd:dict):
     :param sim_results: Location of simulation results
     :return: saves a plot of histogram in the specified location
     """
-    frames = tt_events.get_transit_time_single(tt_results=tt_results, simulation_results=sim_results,
-                                               groups_definitions=gd,
-                                               frame_numbers=False)
+    frames = tt_events.get_transit_time(tt_results=tt_results, simulation_results=sim_results,
+                                        groups_definitions=gd,
+                                        frame_numbers=False)
     combined = frames[0]
-    names = list(combined.keys())
+    models = ['opc', 'tip3p', 'tip4pew']
+    names = ["1", "1.4", "1.8", "2.4", "3"]
+    group_number = [1,2,3,4,5]
     overall_color = sns.color_palette('deep', 3)
-    row, col = (5, 3)
+    row, col = (5, 3)  # 5 groups and 3 models
     sns.set_context(context="paper", font_scale=1)
-    # plt.rcParams.update({'font.size': 14})
-    fig,ax = plt.subplots(nrows=row,ncols=col,figsize=(10,10),dpi=150)
-    # plt.suptitle("Water transit time distribution - P1 tunnel",fontweight="bold")
-    plt.suptitle("Events vs Time - scatter-plot",fontweight='bold')
+    fig,ax = plt.subplots(nrows=row,ncols=col,figsize=(10,10),dpi=150,sharex=True)
+    plt.suptitle("Water transit time distribution - P1 tunnel",fontweight="bold")
     grp_num = 0
     for r in range(row):
         for c in range(col):
-            group_name = names[grp_num]
-            data = combined[group_name]
+            data = []
+
+            current_model = models[c]
+            group_name = f"Group {group_number[r]} {current_model}"
+            # combine data from all sims
+            for sim in range(1,6):
+                sim_name = f"{names[r]}A_{current_model}_{sim}"
+                _sim_time = combined[sim_name]
+                data.extend(_sim_time)
+
             time_in_ps = [x * 10 for x in data]
-            time_in_ps_log =[1/(x) * 10 for x in data]
             print(f"{group_name} \nrow_col in plot = {r},{c}")
             top_10_slow = sorted(time_in_ps,reverse=True)[:10]
             top_10_fast = sorted(time_in_ps)[:10]
-            # print(time_in_ps_log)
+
             print(f"TOP 10 frame number of slowest events \n ------------- \n {top_10_slow} \n"
                   f"\n"
                   f"TOP 10 frame number of fastest events \n ------------- \n {top_10_fast} \n")
@@ -343,9 +350,9 @@ def histogram_matching_frames(tt_results:str,sim_results:str,gd:dict):
     :param sim_results: Location of simulation results
     :return: saves a plot of histogram in the specified location
     """
-    frames = tt_events.get_transit_time_single(tt_results=tt_results, simulation_results=sim_results,
-                                               groups_definitions=gd,
-                                               frame_numbers=True)
+    frames = tt_events.get_transit_time(tt_results=tt_results, simulation_results=sim_results,
+                                        groups_definitions=gd,
+                                        frame_numbers=True)
     combined = frames[0]
     names = list(combined.keys())
     overall_color = sns.color_palette('deep', 3)
