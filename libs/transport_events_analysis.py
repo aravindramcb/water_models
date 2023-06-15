@@ -135,7 +135,7 @@ def get_scids_of_groups(comparative_analysis_results, groups_definition: dict = 
                                       if key in sc_id_by_tunnels[epoch][0]}
     if show_info:
         for group in sc_id_by_tunnels:
-            # print(f"for group {group}")
+            print(f"for group {group}")
             print(sc_id_by_tunnels[group])
             # print(" ")
 
@@ -173,7 +173,7 @@ def _get_unassigned_events(tt_results: str):
     return unassigned
 
 
-def _get_data_from_tt(tt_super_cluster_details, debug:bool = False,frame_numbers:bool=False):
+def _get_data_from_tt(tt_super_cluster_details, debug: bool = False, frame_numbers: bool = False):
     """
     Helper function to parse the details from filtered_supercluster_details2.txt file and returns the entry and release
     len() for every sim #.
@@ -182,8 +182,8 @@ def _get_data_from_tt(tt_super_cluster_details, debug:bool = False,frame_numbers
     /details/filtered_super_clusters_details1.txt
     :returns dict(entry,release) of Aquaduct frames per event , dict(entry_water), dict(release_water)
     """
-    #EVENTS
-    num_frames_aq_water= defaultdict(list)
+    # EVENTS
+    num_frames_aq_water = defaultdict(list)
     frame_numbers_aq_water = defaultdict(list)
     entry_water = defaultdict(list)
     release_water = defaultdict(list)
@@ -210,10 +210,10 @@ def _get_data_from_tt(tt_super_cluster_details, debug:bool = False,frame_numbers
                 _super_cluster_id.append(sc_id)  # Add to tmp list to pass below
                 # print(readfile[i])
 
-            while not readfile[i].startswith('from'): # move pointer below "Tunnel clusters:"
-                i +=1
+            while not readfile[i].startswith('from'):  # move pointer below "Tunnel clusters:"
+                i += 1
 
-            _tunnel_clusters_sim_list=[]
+            _tunnel_clusters_sim_list = []
             while not readfile[i] == '':
                 sim_id = readfile[i].split()[1][:-1]
                 _tunnel_clusters_sim_list.append(sim_id)
@@ -241,7 +241,7 @@ def _get_data_from_tt(tt_super_cluster_details, debug:bool = False,frame_numbers
                         start, end = element.split("->")
                         number_of_frames = int(end) - int(start)
                         if frame_numbers:
-                            _frame_numbers = list(range(int(start),int(end)+1))
+                            _frame_numbers = list(range(int(start), int(end) + 1))
                             frame_numbers_entry = frame_numbers_entry + _frame_numbers  # Frame 1,2,3,4 etc.
                         number_of_frames_entry.append(number_of_frames)  # count of frames
                     entry_water_count = len(entry_waters) - 1
@@ -277,14 +277,14 @@ def _get_data_from_tt(tt_super_cluster_details, debug:bool = False,frame_numbers
                         number_of_frames = int(end) - int(start)
                         if frame_numbers:
                             _frame_numbers = list(range(int(start), int(end) + 1))
-                            frame_numbers_release= frame_numbers_release + _frame_numbers
+                            frame_numbers_release = frame_numbers_release + _frame_numbers
                         number_of_frames_release.append(number_of_frames)
                     release_water_count = len(release_waters) - 1
                     if sim_id in _tunnel_clusters_sim_list:
                         _epoch_frames_release[sim_id] = number_of_frames_release
                         _epoch_water_release[sim_id] = release_water_count
                         if frame_numbers:
-                            _epoch_frame_numbers_release[sim_id]=frame_numbers_release
+                            _epoch_frame_numbers_release[sim_id] = frame_numbers_release
                     if debug:
                         print("There is no tunnel cluster for the release event below :  ")
                         print(f"[RELEASE] - SCID {sc_id} - {sim_id} - {release_water_count}")
@@ -293,9 +293,9 @@ def _get_data_from_tt(tt_super_cluster_details, debug:bool = False,frame_numbers
                 i += 1
             entry_water[sc_id].append(_epoch_water_entry)
             release_water[sc_id].append(_epoch_water_release)
-            num_frames_aq_water[sc_id] = [_epoch_frames_entry,_epoch_frames_release]
+            num_frames_aq_water[sc_id] = [_epoch_frames_entry, _epoch_frames_release]
             if frame_numbers:
-                frame_numbers_aq_water[sc_id] = [_epoch_frame_numbers_entry,_epoch_frame_numbers_release]
+                frame_numbers_aq_water[sc_id] = [_epoch_frame_numbers_entry, _epoch_frame_numbers_release]
     results_file.close()
     if debug:
         print("----------------------------------------------------------------\n \n")
@@ -491,38 +491,48 @@ def consolidate_results(tt_results: str, groups_definitions: dict, save_location
 
     return consolidated_df
 
-def get_transit_time_single(tt_results, simulation_results:str, groups_definitions:dict, frame_numbers:bool=False,
-                            debug:bool=False):
+
+def get_transit_time(tt_results, simulation_results: str, groups_definitions: dict, frame_numbers: bool = False,
+                     debug: bool = False):
     """
     Transit time = Time spent inside the tunnel for a single aquaduct event.
     This is to compare how much frames an event takes time to pass through a tunnel.
+    :param tt_results Folder in which tt results are present
+    :param simulation_results folder in which simulation results are present
+    :param groups_definitions Tunnels definition, tunnel_name:superclusters
+    :param frame_numbers Return the frame numbers per simulaiton
+    :returns Three dictionaries of combined_events, entry, release which contains list(list) of number of frames the
+    event took place/ if frame_numbers=True, then returns the range of frame numbers which events took place
+
     """
     # Read filtered_super_cluster_details_2.txt
-    sc_details_file = os.path.join(tt_results,"data","super_clusters","details","filtered_super_cluster_details2_debug.txt")
+    sc_details_file = os.path.join(tt_results, "data", "super_clusters", "details",
+                                   "filtered_super_cluster_details2.txt")
     if frame_numbers:
-        frames = _get_data_from_tt(sc_details_file,frame_numbers=True)
+        frames = _get_data_from_tt(sc_details_file, frame_numbers=True)
     else:
         parsed_results = _get_data_from_tt(sc_details_file)
-        frames= parsed_results[0]
+        frames = parsed_results[0]
     directories = [d for d in os.listdir(simulation_results) if os.path.isdir(os.path.join(simulation_results, d))]
     directories.sort(key=lambda x: (x.split("_")[0][:-1], x))
     combined_dict = defaultdict(list)
-    entry_dict=defaultdict(list)
+    entry_dict = defaultdict(list)
     release_dict = defaultdict(list)
-    comparative_results_loc = os.path.join(tt_results,"statistics/comparative_analysis")
+    comparative_results_loc = os.path.join(tt_results, "statistics/comparative_analysis")
     name_of_tunnel = list(groups_definitions.keys())[0]
     scids = groups_definitions[name_of_tunnel]
     scids_in_group = get_scids_of_groups(comparative_analysis_results=comparative_results_loc,
-                                         groups_definition=groups_definitions,show_info=True)
+                                         groups_definition=groups_definitions, show_info=True)
     for scid in scids:
-        current_values = frames[scid]
-
-        combined_values =defaultdict(list)
+        current_values = frames[scid]  # current_values[0]=entry [1]=release
+        # combine entry and release to a single value
+        combined_values = defaultdict(list)
         for d in current_values:
             for key, value in d.items():
                 if not len(value) == 0:
                     combined_values[key].extend(value)
-        combined_values_all = {k: combined_values.get(k,0) for k in directories}
+        # include simulations with empty events
+        combined_values_all = {k: combined_values.get(k, 0) for k in directories}
         index = 0
 
         # names are the suffixes of the group names, my full group names are -['opc_1', 'opc_1.4', 'opc_1.8', 'opc_2.4',
@@ -536,18 +546,35 @@ def get_transit_time_single(tt_results, simulation_results:str, groups_definitio
             group_name = directories[index].split("_")[1] + "_" + str(names[group_number])
             # condition to check if the SCID is present in current comparative_analysis group
             if scid in scids_in_group[group_name][0][name_of_tunnel]:
-                keys = directories[index:index+5]
-                values =[]
-                entry = []
-                release = []
+                keys = directories[index:index + 5]
+                combined = defaultdict(list)
+                entry = defaultdict(list)
+                release = defaultdict(list)
                 for key in keys:
-                    entry.extend(current_values[0][key])
-                    release.extend(current_values[1][key])
+                    if not current_values[0][key]:  # if no value for the simulation, use 0
+                        entry.setdefault(key,[])
+                    else:
+                        entry[key]= current_values[0][key]
+                    if not current_values[1][key]:
+                        release.setdefault(key,[])
+                    else:
+                        release[key]=current_values[1][key]
                     if combined_values_all[key] != 0:
-                        values.extend(combined_values_all[key])
-                combined_dict[group_name].extend(values)
-                entry_dict[group_name].extend(entry)
-                release_dict[group_name].extend(release)
+                        combined[key] = combined_values_all[key]
+                    else:
+                        combined.setdefault(key,[])
+
+                def update_dict(old_dict:dict, new_dict:dict):
+                    for key,value in new_dict.items():
+                        if key in old_dict:
+                            old_dict[key].extend(new_dict[key])
+                        else:
+                            old_dict[key] = new_dict[key]
+
+                update_dict(combined_dict,combined)
+                update_dict(entry_dict,entry)
+                update_dict(release_dict,release)
+
             else:
                 if debug:
                     print(f"SCID - {scid} not present in {group_name}, not processing data from it")
@@ -557,9 +584,9 @@ def get_transit_time_single(tt_results, simulation_results:str, groups_definitio
                 else:
                     pass
             index += 5  # move to next 5 simulations
+
             # Move to next group / there are 15 simulations per water model and // 5 groups, which is why range(0,5)
             if index % 15 in list(range(0, 5)):
                 group_number += 1
 
-    return combined_dict,entry_dict,release_dict
-
+    return combined_dict, entry_dict, release_dict
