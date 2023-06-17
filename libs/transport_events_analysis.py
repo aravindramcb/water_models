@@ -407,7 +407,7 @@ def consolidate_results(tt_results: str, groups_definitions: dict, save_location
 
     # CONSOLIDATE ENTRY + RELEASE PER SIMULATION
     groups_scs = get_scids_of_groups(comparative_analysis_results,
-                                     groups_definitions)  # get corresponding SC per group which are water transporters
+                                     groups_definitions,show_info=True)  # get corresponding SC per group which are water transporters
 
     opc_folders = list(groups_scs.keys())[0:5]  # Assuming folder 1-5 is OPC and so on
     tip3p_folders = list(groups_scs.keys())[5:10]
@@ -590,3 +590,76 @@ def get_transit_time(tt_results, simulation_results: str, groups_definitions: di
                 group_number += 1
 
     return combined_dict, entry_dict, release_dict
+
+
+def gap_between_transport_events(tt_results: str, sim_results: str, tunnels_definition: dict):
+    """
+    Get the average number of frames per simulation is which there are no events happening. Also manipulate the data
+    into groups and models
+    :return:
+    """
+    from collections import Counter
+    import numpy as np
+    fetched_frames = get_transit_time(tt_results=tt_results, simulation_results=sim_results,
+                                      groups_definitions=tunnels_definition,
+                                      frame_numbers=True)
+    names = ["1", "1.4", "1.8", "2.4", "3"]
+    models = ["opc", "tip3p", "tip4pew"]
+    events = ['Entry&Release', 'Entry', 'Release']
+    all_data =[]
+    for event_type in range(3):  # 0= entry&release, 1=entry, 2=release
+        for group in range(5):  # 5 groups
+            group_df = pd.DataFrame()
+            print(f"\n{events[event_type]} Group {group + 1}")
+
+            for model in models:
+                group_name = f"{model}_{names[group]}"
+
+                # Get frame numbers for 5 simulations in the current group
+                data = []
+                for sim in range(1, 6):
+                    sim_name = f"{names[group]}A_{model}_{sim}"
+                    frames_in_current_event_type = fetched_frames[event_type]
+                    _frames = frames_in_current_event_type[sim_name]
+                    data.append(_frames)
+                # Get the average frames per simulation for every group
+                plot_data = []  # This will have average number of frames per simulation
+                for sim in data:
+                    occurrences = Counter(sim)
+                    gap = []
+                    _tmp_gap = 0
+
+                    # Count the number of gaps beween events in frames
+                    for frame_number in range(1,20001):  # 20000 frames in my simulation
+                        current_value = occurrences.get(frame_number)
+                        if current_value is None and frame_number != 20000:
+                            _tmp_gap += 1
+                        elif current_value is not None:
+                            gap.append(_tmp_gap)
+                            _tmp_gap = 0
+                        elif current_value is None and frame_number == 20000:  # append if the frames has reached the end without any events
+                            # gap.append(_tmp_gap+1)
+                            if _tmp_gap == 19999:
+                                gap.append(np.nan)
+                            else:
+                                gap.append(_tmp_gap)
+                    # if the frames have continous events, then the gap between events is technically 0. But we do not
+                    # need it
+                    gap_without_zeros = [x for x in gap if x != 0]
+                    median_gap_per_simulation = np.median(gap_without_zeros)
+                    plot_data.append(median_gap_per_simulation)
+
+                # create dataframes to plot
+                if "opc" in group_name:
+                    df = pd.DataFrame(plot_data)
+                    group_df[group_name] = df
+                elif "tip3p" in group_name:
+                    df = pd.DataFrame(plot_data)
+                    group_df[group_name] = df
+                else:
+                    df = pd.DataFrame(plot_data)
+                    group_df[group_name] = df
+
+            all_data.append(group_df)
+            print(group_df)
+    return all_data
