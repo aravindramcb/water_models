@@ -74,13 +74,13 @@ def get_transit_time(tt_results, sim_results, group_definiton, type: str = 'comb
     i, j, k = (0, 5, 10)
     median_df = defaultdict(pd.DataFrame)
     for row in range(5):  # 5 groups
-        _median_df=[]
+        _median_df = []
 
         for col in range(3):  # 3 water models
             _median_simulations = []
             current_model = models[col]
 
-            for sim_number in range(1,6):  # 5 simulations - starting from 1-5
+            for sim_number in range(1, 6):  # 5 simulations - starting from 1-5
                 sim_name = f"{names[row]}A_{current_model}_{sim_number}"
                 _median = np.median(values[sim_name])
                 _median_simulations.append(_median)
@@ -104,27 +104,26 @@ def plot_waters_per_frame(tt_results: str, sim_results: str, tunnels_definition:
     import numpy as np
     from collections import Counter
     fetched_frames = t_events.get_transit_time(tt_results=tt_results, simulation_results=sim_results,
-                                       groups_definitions=tunnels_definition,
-                                       frame_numbers=True)
+                                               groups_definitions=tunnels_definition,
+                                               frame_numbers=True)
     overall_color = sns.color_palette('deep', 3)
     sns.set(style="white", context="paper", font_scale=1)
     fig, ax = plt.subplots(nrows=3, ncols=5, figsize=(8, 6), dpi=300)
 
-
     names = ["1", "1.4", "1.8", "2.4", "3"]
     models = ["opc", "tip3p", "tip4pew"]
-    events =['Entry&Release', 'Entry', 'Release']
+    events = ['Entry&Release', 'Entry', 'Release']
     for event_type in range(3):  # 0= entry&release, 1=entry, 2=release
         for group in range(5):  # 5 groups
             group_df = pd.DataFrame()
-            print(f"{events[event_type]} Group {group+1}")
+            print(f"{events[event_type]} Group {group + 1}")
 
             for model in models:
                 group_name = f"{model}_{names[group]}"
 
                 # Get frame numbers for 5 simulations in the current group
                 data = []
-                for sim in range(1,6):
+                for sim in range(1, 6):
                     sim_name = f"{names[group]}A_{model}_{sim}"
                     frames_in_current_event_type = fetched_frames[event_type]
                     _frames = frames_in_current_event_type[sim_name]
@@ -155,11 +154,10 @@ def plot_waters_per_frame(tt_results: str, sim_results: str, tunnels_definition:
                     df = pd.DataFrame(plot_data)
                     group_df[group_name] = df
 
-
             print(group_df)
 
             # barplot
-            sns.barplot(data=group_df, ax=ax[event_type,group], palette=overall_color, errorbar='sd',
+            sns.barplot(data=group_df, ax=ax[event_type, group], palette=overall_color, errorbar='sd',
                         capsize=.1, linewidth=1, errwidth=1)
 
             # Violin Plot if needed
@@ -168,15 +166,15 @@ def plot_waters_per_frame(tt_results: str, sim_results: str, tunnels_definition:
             # for i in [2,6,10]:
             #     ax[group].get_children()[i].set_color('r')
 
-            ax[event_type,group].set_xticklabels([])
-            ax[event_type,group].set_ylim(0,6.5)
-        ax[event_type,2].set_title(f"WATERS PER FRAME {events[event_type]} - P1 tunnel\n", fontweight='bold')
-        ax[event_type,0].set_ylabel("Avg. Num waters")
-        ax[event_type,0].set_xlabel("Group 1")
-        ax[event_type,1].set_xlabel("Group 2")
-        ax[event_type,2].set_xlabel("Group 3")
-        ax[event_type,3].set_xlabel("Group 4")
-        ax[event_type,4].set_xlabel("Group 5")
+            ax[event_type, group].set_xticklabels([])
+            ax[event_type, group].set_ylim(0, 6.5)
+        ax[event_type, 2].set_title(f"WATERS PER FRAME {events[event_type]} - P1 tunnel\n", fontweight='bold')
+        ax[event_type, 0].set_ylabel("Avg. Num waters")
+        ax[event_type, 0].set_xlabel("Group 1")
+        ax[event_type, 1].set_xlabel("Group 2")
+        ax[event_type, 2].set_xlabel("Group 3")
+        ax[event_type, 3].set_xlabel("Group 4")
+        ax[event_type, 4].set_xlabel("Group 5")
     plt.tight_layout()
     plt.savefig(f"/home/aravind/PhD_local/dean/figures/main_images/water_per_frame.png")
 
@@ -311,52 +309,70 @@ def tt_events(tt_events, save_location, normailzed=None):
     plt.tight_layout()
     plt.savefig(save_name)
 
-def plot_gaps_in_events(tt_results:str, sim_results: str, tunnels_def: dict, save_location: str):
 
+def plot_percent_event_occurrence(tt_results: str, sim_results: str, tunnels_def: dict, save_location: str):
     sns.set(style="white", context="paper", font_scale=0.8)
     fig, ax = plt.subplots(nrows=3, ncols=5, figsize=(8, 6), dpi=300)
     groups = ["Group 1", "Group 2", "Group 3", "Group 4", "Group 5"]
-    events = s7.gap_between_transport_events(tt_results, sim_results, tunnels_def)
+    events = s7.fraction_events_occurrence(tt_results, sim_results, tunnels_def)
     entry_release = events[0:5]
     for i in range(5):
         data = entry_release[i]
-        data = data.apply(lambda x: x * 10, axis=0)
-        print(groups[i], "Entry&Release\n", data)
+        data = data.apply(lambda x: x * 100, axis=0)
+        # print(groups[i], "Entry&Release\n", data)
         ts = sns.barplot(data=data, ax=ax[0, i], width=0.5, errorbar='se', capsize=.1, linewidth=1, errwidth=1)
         ts.set_xticklabels([])
         ts.set_xlabel(groups[i])
+        ts.set_ylim(0, 100)
         i += 1
-    ax[0, 2].set_title("Gap between events - medians - [Entry + Release] - P1 Tunnel ".upper(), fontweight='bold')
-    ax[0, 0].set_ylabel("Time (ps)", fontweight="bold")
 
-    entry= events[5:10]
+    # insets becaue the first 2 plots have very small percentages
+    for i in range(2):
+        data = entry_release[i]
+        data = data.apply(lambda x: x * 100, axis=0)
+        left, bottom, width, height = [0.25, 0.4, 0.5, 0.4]
+        inset_axes = ax[0, i].inset_axes([left, bottom, width, height])
+        inset_plot = sns.barplot(data=data, ax=inset_axes, width=0.5, errorbar='se', capsize=.1, linewidth=1,
+                                 errwidth=1)
+        inset_plot.set_xticks([])
+        # inset_plot.set_yticks([])
+        inset_plot.set_xlabel('')
+        inset_plot.set_ylabel('')
+        inset_plot.set_ylim(0, 4)
+
+    ax[0, 2].set_title("% of frames per simulation involving Entry + Release Events - P1 Tunnel ".upper(),
+                       fontweight='bold')
+    ax[0, 0].set_ylabel("% Frames", fontweight="bold")
+
+    entry = events[5:10]
     for i in range(5):
         data = entry[i]
-        data = data.apply(lambda x: x * 10, axis=0)
+        data = data.apply(lambda x: x * 100, axis=0)
         print(groups[i], "Entry\n", data)
         ts_entry = sns.barplot(data=data, ax=ax[1, i], width=0.5, errorbar='se', capsize=.1, linewidth=1, errwidth=1)
         ts_entry.set_xticklabels([])
         ts_entry.set_xlabel(groups[i])
         i += 1
-    ax[1, 2].set_title("Gap between events- medians - [Entry] - P1 Tunnel ".upper(), fontweight='bold')
-    ax[1, 0].set_ylabel("Time (ps)", fontweight="bold")
+    ax[1, 2].set_title("% of frames per simulation involving Entry Events - P1 Tunnel ".upper(), fontweight='bold')
+    ax[1, 0].set_ylabel("% Frames", fontweight="bold")
 
     release = events[10:15]
     for i in range(5):
         data = release[i]
-        data = data.apply(lambda x: x * 10, axis=0)
+        data = data.apply(lambda x: x * 100, axis=0)
         print(groups[i], "Release\n", data)
         ts_release = sns.barplot(data=data, ax=ax[2, i], width=0.5, errorbar='se', capsize=.1, linewidth=1, errwidth=1)
         ts_release.set_xticklabels([])
         ts_release.set_xlabel(groups[i])
         i += 1
-    ax[2, 2].set_title("Gap between events - medians [Release] - P1 Tunnel ".upper(), fontweight='bold')
-    ax[2, 0].set_ylabel("Time (ps)", fontweight="bold")
+    ax[2, 2].set_title("% of frames per simulation involving Release Events- P1 Tunnel ".upper(), fontweight='bold')
+    ax[2, 0].set_ylabel("% Frames", fontweight="bold")
 
-    save_file = os.path.join(save_location, "gap.png")
+    save_file = os.path.join(save_location, "fraction_frames_events_inset.png")
     plt.tight_layout()
     plt.savefig(save_file)
     plt.close()
+
 
 def main():
     # Set the variables
@@ -382,7 +398,8 @@ def main():
     #                         simulation_results=simulation_results, save_location=save_location)
     #
     # plot_waters_per_frame(tt_results=tt_results, sim_results=simulation_results, tunnels_definition=main_tunnel)
-    plot_gaps_in_events(tt_results,simulation_results,main_tunnel,save_location)
+    plot_percent_event_occurrence(tt_results, simulation_results, main_tunnel, save_location)
+
 
 if __name__ == '__main__':
     main()

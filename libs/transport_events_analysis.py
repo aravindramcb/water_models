@@ -592,10 +592,12 @@ def get_transit_time(tt_results, simulation_results: str, groups_definitions: di
     return combined_dict, entry_dict, release_dict
 
 
-def gap_between_transport_events(tt_results: str, sim_results: str, tunnels_definition: dict):
+def fraction_events_occurrence(tt_results: str, sim_results: str, tunnels_definition: dict):
     """
+    UPdate: this will now return the fraction of frames where events occur.
     Get the average number of frames per simulation is which there are no events happening. Also manipulate the data
-    into groups and models
+    into groups and models.
+
     :return:
     """
     from collections import Counter
@@ -643,12 +645,17 @@ def gap_between_transport_events(tt_results: str, sim_results: str, tunnels_defi
                                 gap.append(np.nan)
                             else:
                                 gap.append(_tmp_gap)
-                    # if the frames have continous events, then the gap between events is technically 0. But we do not
+                    # if the frames have continuous events, then the gap between events is technically 0. But we do not
                     # need it
                     gap_without_zeros = [x for x in gap if x != 0]
-                    median_gap_per_simulation = np.median(gap_without_zeros)
-                    plot_data.append(median_gap_per_simulation)
+                    number_of_frames_with_events=len(gap)-len(gap_without_zeros)
 
+                    # Revision of script upon JB request
+                    # fraction_evets_occuramnce = number of frames where events occur / total frames in simulation
+                    fraction_of_events_occurance_in_current_simulation = number_of_frames_with_events/20000
+                    # median_gap_per_simulation = np.median(gap_without_zeros)
+                    # plot_data.append(median_gap_per_simulation)
+                    plot_data.append(fraction_of_events_occurance_in_current_simulation)
                 # create dataframes to plot
                 if "opc" in group_name:
                     df = pd.DataFrame(plot_data)
