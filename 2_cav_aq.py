@@ -106,14 +106,14 @@ def plot_aquaduct(water_data):
     :param water_data: The output from read_aquaduct_input()
     :return: Plots
     """
-    group_list = ["1A", "1.4A", "1.8A", "2.4A", "3A"]
+    group_list = ["Group 1", "Group 2", "Group 3", "Group 4", "Group 5"]
     width = 0.6
     fig, ax = plt.subplots(1, 5, figsize=(12, 3), dpi=300)
     plt.subplots_adjust(top=0.8, left=0.07, right=0.89, wspace=0.5, bottom=0.2)
     fig.suptitle('AQUA-DUCT WATERS TRACED', fontsize=12, fontweight='bold')
     x = np.arange(1, 6)
     for epoch in range(5):
-        ax[epoch].set_title(r'{}Å'.format(group_list[epoch][:-1]), size=12)
+        ax[epoch].set_title(group_list[epoch], size=12)
         ax[epoch].set_xticks(x)
         ax[epoch].yaxis.grid(linestyle='--', color='gray', alpha=0.7, zorder=-1)
         opc_x = x - width / 3
@@ -139,8 +139,10 @@ def plot_aquaduct_per_group(water_data):
     :param water_data: The output from read_aquaduct_input()
     :return:
     """
+    import seaborn as sns
     epoch_list = ["1A", "1.4A", "1.8A", "2.4A", "3A"]
-    plt.style.use("grayscale")
+    overall_color = sns.color_palette('deep', 3)
+    # plt.style.use("grayscale")
     fig, ax = plt.subplots(5, 3, figsize=(8.27, 11.7), dpi=300)
     opc = water_data[0]
     tip3p = water_data[1]
@@ -159,29 +161,29 @@ def plot_aquaduct_per_group(water_data):
     tip3p_df = make_df(tip3p)
     tip4pew_df = make_df(tip4pew)
     # plt.subplots_adjust(wspace=0.4,hspace=0.3)
-    plt.suptitle('AQUA-DUCT Traced Waters', fontsize=15, fontweight='bold')
+    plt.suptitle('AQUA-DUCT Traced Waters [All tunnels]', fontsize=15, fontweight='bold')
     # fig.text(s='Sim Number',x = 0.48, y=0.07,fontsize=15,fontweight='bold')
     # fig.text(s='Number of waters', x=0.05, y=0.37, fontsize=15,rotation=90,fontweight='bold')
     opc_df.plot(ax=ax[0, 0], kind='bar', y='1A', legend=False, rot=0,
-                color='r').set_ylabel("Group 1A", fontsize=15)
+                color=overall_color[0]).set_ylabel("Group 1", fontsize=15)
     opc_df.plot(ax=ax[1, 0], kind='bar', y='1.4A', legend=False, rot=0,
-                color='r').set_ylabel("Group 1.4A", fontsize=15)
+                color=overall_color[0]).set_ylabel("Group 2", fontsize=15)
     opc_df.plot(ax=ax[2, 0], kind='bar', y='1.8A', legend=False,
-                color='r').set_ylabel("Group 1.8A", fontsize=15)
+                color=overall_color[0]).set_ylabel("Group 3", fontsize=15)
     opc_df.plot(ax=ax[3, 0], kind='bar', y='2.4A', legend=False, rot=0,
-                color='r').set_ylabel("Group 2.4A", fontsize=15)
+                color=overall_color[0]).set_ylabel("Group 4", fontsize=15)
     opc_df.plot(ax=ax[4, 0], kind='bar', y='3A', legend=False, rot=0,
-                color='r').set_ylabel("Group 3A", fontsize=15)
-    tip3p_df.plot(ax=ax[0, 1], kind='bar', y='1A', legend=False, rot=0, color='g')
-    tip3p_df.plot(ax=ax[1, 1], kind='bar', y='1.4A', legend=False, rot=0, color='g')
-    tip3p_df.plot(ax=ax[2, 1], kind='bar', y='1.8A', legend=False, rot=0, color='g')
-    tip3p_df.plot(ax=ax[3, 1], kind='bar', y='2.4A', legend=False, rot=0, color='g')
-    tip3p_df.plot(ax=ax[4, 1], kind='bar', y='3A', legend=False, rot=0, color='g')
-    tip4pew_df.plot(ax=ax[0, 2], kind='bar', y='1A', legend=False, rot=0, color='c')
-    tip4pew_df.plot(ax=ax[1, 2], kind='bar', y='1.4A', legend=False, rot=0, color='c')
-    tip4pew_df.plot(ax=ax[2, 2], kind='bar', y='1.8A', legend=False, rot=0, color='c')
-    tip4pew_df.plot(ax=ax[3, 2], kind='bar', y='2.4A', legend=False, rot=0, color='c')
-    tip4pew_df.plot(ax=ax[4, 2], kind='bar', y='3A', legend=False, rot=0, color='c')
+                color=overall_color[0]).set_ylabel("Group 5", fontsize=15)
+    tip3p_df.plot(ax=ax[0, 1], kind='bar', y='1A', legend=False, rot=0, color=overall_color[1])
+    tip3p_df.plot(ax=ax[1, 1], kind='bar', y='1.4A', legend=False, rot=0, color=overall_color[1])
+    tip3p_df.plot(ax=ax[2, 1], kind='bar', y='1.8A', legend=False, rot=0, color=overall_color[1])
+    tip3p_df.plot(ax=ax[3, 1], kind='bar', y='2.4A', legend=False, rot=0, color=overall_color[1])
+    tip3p_df.plot(ax=ax[4, 1], kind='bar', y='3A', legend=False, rot=0, color=overall_color[1])
+    tip4pew_df.plot(ax=ax[0, 2], kind='bar', y='1A', legend=False, rot=0, color=overall_color[2])
+    tip4pew_df.plot(ax=ax[1, 2], kind='bar', y='1.4A', legend=False, rot=0, color=overall_color[2])
+    tip4pew_df.plot(ax=ax[2, 2], kind='bar', y='1.8A', legend=False, rot=0, color=overall_color[2])
+    tip4pew_df.plot(ax=ax[3, 2], kind='bar', y='2.4A', legend=False, rot=0, color=overall_color[2])
+    tip4pew_df.plot(ax=ax[4, 2], kind='bar', y='3A', legend=False, rot=0, color=overall_color[2])
     ax[0, 0].set_title("OPC", fontsize=15, fontweight='bold')
     ax[0, 1].set_title("TIP3P", fontsize=15, fontweight='bold')
     ax[0, 2].set_title("TIP4P-Ew", fontsize=15, fontweight='bold')
@@ -193,14 +195,14 @@ def plot_aquaduct_per_group(water_data):
 
 
 def plot_caver(OPC_caver, TIP3P_caver, TIP4Pew_caver):
-    epoch_list = ["1A", "1.4A", "1.8A", "2.4A", "3A"]
+    epoch_list = ["Group 1", "Group 2", "Group 3", "Group 4", "Group 5"]
     width = 0.6
     fig, ax = plt.subplots(1, 5, figsize=(12, 3), dpi=300)
     plt.subplots_adjust(top=0.8, left=0.07, right=0.89, wspace=0.5, bottom=0.2)
     fig.suptitle('CAVER TUNNELS - OVERALL PER GROUP', fontsize=12, fontweight='bold')
     x = np.arange(1, 6)
     for epoch in range(5):
-        ax[epoch].set_title(r'{}Å'.format(epoch_list[epoch][:-1]), size=12)
+        ax[epoch].set_title(epoch_list[epoch], size=12)
         ax[epoch].set_xticks(x)
         ax[epoch].yaxis.grid(linestyle='--', color='gray', alpha=0.7, zorder=-1)
         opc_x = x - width / 3
