@@ -327,18 +327,18 @@ def plot_percent_event_occurrence(tt_results: str, sim_results: str, tunnels_def
         i += 1
 
     # insets becaue the first 2 plots have very small percentages
-    for i in range(2):
-        data = entry_release[i]
-        data = data.apply(lambda x: x * 100, axis=0)
-        left, bottom, width, height = [0.25, 0.4, 0.5, 0.4]
-        inset_axes = ax[0, i].inset_axes([left, bottom, width, height])
-        inset_plot = sns.barplot(data=data, ax=inset_axes, width=0.5, errorbar='se', capsize=.1, linewidth=1,
-                                 errwidth=1)
-        inset_plot.set_xticks([])
-        # inset_plot.set_yticks([])
-        inset_plot.set_xlabel('')
-        inset_plot.set_ylabel('')
-        inset_plot.set_ylim(0, 4)
+    # for i in range(2):
+    #     data = entry_release[i]
+    #     data = data.apply(lambda x: x * 100, axis=0)
+    #     left, bottom, width, height = [0.25, 0.4, 0.5, 0.4]
+    #     inset_axes = ax[0, i].inset_axes([left, bottom, width, height])
+    #     inset_plot = sns.barplot(data=data, ax=inset_axes, width=0.5, errorbar='se', capsize=.1, linewidth=1,
+    #                              errwidth=1)
+    #     inset_plot.set_xticks([])
+    #     # inset_plot.set_yticks([])
+    #     inset_plot.set_xlabel('')
+    #     inset_plot.set_ylabel('')
+    #     inset_plot.set_ylim(0, 4)
 
     ax[0, 2].set_title("% of frames per simulation involving Entry + Release Events - P1 Tunnel ".upper(),
                        fontweight='bold')
@@ -368,7 +368,8 @@ def plot_percent_event_occurrence(tt_results: str, sim_results: str, tunnels_def
     ax[2, 2].set_title("% of frames per simulation involving Release Events- P1 Tunnel ".upper(), fontweight='bold')
     ax[2, 0].set_ylabel("% Frames", fontweight="bold")
 
-    save_file = os.path.join(save_location, "fraction_frames_events_inset.png")
+    # save_file = os.path.join(save_location, "fraction_frames_events_inset.png")
+    save_file = os.path.join(save_location, "percent_frames_events.png")
     plt.tight_layout()
     plt.savefig(save_file)
     plt.close()
