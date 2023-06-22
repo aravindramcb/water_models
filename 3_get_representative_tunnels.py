@@ -172,10 +172,11 @@ if __name__ == '__main__':
 
     # Automated saving the first match
     # Usage - find_frame_and_save_visualization([list of sc ids], save_dir_name)
-    # find_frame_and_save_visualization(P1_scs, "rep_tunnels/P1")
+    find_frame_and_save_visualization(P1_scs, "rep_tunnels/P1")
+
     # MANUAL SEARCH FOR FRAME NUMBER AND MD_TAG FOR GIVEN SCID:
     # result = print_details(SC_ID, cutoff = new_cutoff)
-    # result = print_details(17, cutoff=0.5)
+    result = print_details(11, cutoff=0.5)
 
     # MANUAL saving of visualization
     # super_cluster_id = 17

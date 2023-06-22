@@ -112,8 +112,8 @@ def normalized_plot_radii_by_HB(data,hbond_outfolder, outfolder, tag="", frac_th
     hbonds = list(e_hb.keys())
     hbonds.sort()
     for hb in hbonds:
-        ehb_hists[hb] = np.histogram(e_hb[hb], range=(0.9, 2.7), bins=12)[0].astype(float)
-        _, hb_xranges = np.histogram(e_hb[hb], range=(0.9, 2.7), bins=12)
+        ehb_hists[hb] = np.histogram(e_hb[hb], range=(0.9, 2.1), bins=12)[0].astype(float)
+        _, hb_xranges = np.histogram(e_hb[hb], range=(0.9, 2.1), bins=12)
     x_offset = (hb_xranges[1] - hb_xranges[0]) / 2.0
     hist_sums = np.zeros(12)
     for hb in hbonds:
@@ -134,11 +134,13 @@ def normalized_plot_radii_by_HB(data,hbond_outfolder, outfolder, tag="", frac_th
     ax.set_ylim(0, 1)
     ax.set_xticks(hb_xranges)
     ax.set_xticklabels(labels=[str(np.round(x,1)) for x in hb_xranges],
-                       fontdict={"fontsize":6})
-    ax.legend(loc="upper right", fontsize=6)
-    plt.ylabel("Fraction of events")
-    plt.xlabel(r"Radii [$\AA$]")
-    plt.title("Radii of closest sphere to water transport by H-bonds in 1-MDs or more")
+                       fontdict={"fontsize":15})
+    ax.set_yticks([0.2,0.4,0.6,0.8,1.0])
+    ax.set_yticklabels(labels=[0.2,0.4,0.6,0.8,1.0],fontsize=15)
+    ax.legend(loc="upper right", fontsize=10)
+    plt.ylabel("Fraction of events",fontsize=15)
+    # plt.xlabel(r"Radii [$\AA$]",fontsize=15)
+    # plt.title("Radii of closest sphere to water transport by H-bonds in 1-MDs or more")
     plt.savefig(os.path.join(outfolder, tag+"radii_by_HB_normalized_md1.png"), dpi=300, format="png")
 
 def normalized_plot_radii_by_restype(data, outfolder, threshold=3.0, tag="", frac_thr=0.7):
@@ -405,7 +407,7 @@ def plot_radii_by_HB(data,hbond_outfolder, outfolder, tag="", frac_thr=0.7):
             for line in hfile:
                 if line.startswith("#"):
                     continue
-                hbonds = int(line.strip().split()[2])
+                hbonds = int(line.strip().split()[3])
         return hbonds
     
     mds = list(data.keys())
@@ -452,12 +454,12 @@ def plot_radii_by_HB(data,hbond_outfolder, outfolder, tag="", frac_thr=0.7):
     ax.set_ylim(0,100) #dhaa:300, epx:2250, lipase:1400
     ax.set_xticks(hb_xranges)
     ax.set_xticklabels(labels=[str(np.round(x,1)) for x in hb_xranges],
-                       fontdict={"fontsize":10})
+                       fontdict={"fontsize":12})
     ax.legend(loc="upper right", fontsize=8)
     plt.ylabel("Number of events")
     plt.xlabel(r"Radii [$\AA$]")
     plt.title("Radii of closest sphere to water transport by H-bonds in 1-MDs or more")
-    plt.savefig(os.path.join(outfolder, tag+"radii_by_HB_md1.png"), dpi=300, format="png")
+    plt.savefig(os.path.join(outfolder, tag+"radii_by_HB_bridge_md1.png"), dpi=300, format="png")
 
 def plot_radii_by_restype(data, outfolder, threshold=3.0, tag="", frac_thr=0.7):
     dhaa_res = {1:"ILE", 2:"GLY", 3:"THR", 4:"GLY", 5:"PHE", 6:"PRO", 7:"PHE", 8:"ASP", 9:"PRO", 10:"HID", 11:"TYR", 12:"VAL", 13:"GLU", 14:"VAL", 15:"LEU", 16:"GLY", 17:"GLU", 18:"ARG", 19:"MET", 20:"HID", 21:"TYR", 22:"VAL", 23:"ASP", 24:"VAL", 25:"GLY", 26:"PRO", 27:"ARG", 28:"ASP", 29:"GLY", 30:"THR", 31:"PRO", 32:"VAL", 33:"LEU", 34:"PHE", 35:"LEU", 36:"HID", 37:"GLY", 38:"ASN", 39:"PRO", 40:"THR", 41:"SER", 42:"SER", 43:"TYR", 44:"LEU", 45:"TRP", 46:"ARG", 47:"ASN", 48:"ILE", 49:"ILE", 50:"PRO", 51:"HIE", 52:"VAL", 53:"ALA", 54:"PRO", 55:"SER", 56:"HIE", 57:"ARG", 58:"CYS", 59:"ILE", 60:"ALA", 61:"PRO", 62:"ASP", 63:"LEU", 64:"ILE", 65:"GLY", 66:"MET", 67:"GLY", 68:"LYS", 69:"SER", 70:"ASP", 71:"LYS", 72:"PRO", 73:"ASP", 74:"LEU", 75:"ASP", 76:"TYR", 77:"PHE", 78:"PHE", 79:"ASP", 80:"ASP", 81:"HIE", 82:"VAL", 83:"ARG", 84:"TYR", 85:"LEU", 86:"ASP", 87:"ALA", 88:"PHE", 89:"ILE", 90:"GLU", 91:"ALA", 92:"LEU", 93:"GLY", 94:"LEU", 95:"GLU", 96:"GLU", 97:"VAL", 98:"VAL", 99:"LEU", 100:"VAL", 101:"ILE", 102:"HIE", 103:"ASP", 104:"TRP", 105:"GLY", 106:"SER", 107:"ALA", 108:"LEU", 109:"GLY", 110:"PHE", 111:"HIE", 112:"TRP", 113:"ALA", 114:"LYS", 115:"ARG", 116:"ASN", 117:"PRO", 118:"GLU", 119:"ARG", 120:"VAL", 121:"LYS", 122:"GLY", 123:"ILE", 124:"ALA", 125:"CYS", 126:"MET", 127:"GLU", 128:"PHE", 129:"ILE", 130:"ARG", 131:"PRO", 132:"ILE", 133:"PRO", 134:"THR", 135:"TRP", 136:"ASP", 137:"GLU", 138:"TRP", 139:"PRO", 140:"GLU", 141:"PHE", 142:"ALA", 143:"ARG", 144:"GLU", 145:"THR", 146:"PHE", 147:"GLN", 148:"ALA", 149:"PHE", 150:"ARG", 151:"THR", 152:"ALA", 153:"ASP", 154:"VAL", 155:"GLY", 156:"ARG", 157:"GLU", 158:"LEU", 159:"ILE", 160:"ILE", 161:"ASP", 162:"GLN", 163:"ASN", 164:"ALA", 165:"PHE", 166:"ILE", 167:"GLU", 168:"GLY", 169:"ALA", 170:"LEU", 171:"PRO", 172:"LYS", 173:"CYS", 174:"VAL", 175:"VAL", 176:"ARG", 177:"PRO", 178:"LEU", 179:"THR", 180:"GLU", 181:"VAL", 182:"GLU", 183:"MET", 184:"ASP", 185:"HIE", 186:"TYR", 187:"ARG", 188:"GLU", 189:"PRO", 190:"PHE", 191:"LEU", 192:"LYS", 193:"PRO", 194:"VAL", 195:"ASP", 196:"ARG", 197:"GLU", 198:"PRO", 199:"LEU", 200:"TRP", 201:"ARG", 202:"PHE", 203:"PRO", 204:"ASN", 205:"GLU", 206:"LEU", 207:"PRO", 208:"ILE", 209:"ALA", 210:"GLY", 211:"GLU", 212:"PRO", 213:"ALA", 214:"ASN", 215:"ILE", 216:"VAL", 217:"ALA", 218:"LEU", 219:"VAL", 220:"GLU", 221:"ALA", 222:"TYR", 223:"MET", 224:"ASN", 225:"TRP", 226:"LEU", 227:"HID", 228:"GLN", 229:"SER", 230:"PRO", 231:"VAL", 232:"PRO", 233:"LYS", 234:"LEU", 235:"LEU", 236:"PHE", 237:"TRP", 238:"GLY", 239:"THR", 240:"PRO", 241:"GLY", 242:"VAL", 243:"LEU", 244:"ILE", 245:"PRO", 246:"PRO", 247:"ALA", 248:"GLU", 249:"ALA", 250:"ALA", 251:"ARG", 252:"LEU", 253:"ALA", 254:"GLU", 255:"SER", 256:"LEU", 257:"PRO", 258:"ASN", 259:"CYS", 260:"LYS", 261:"THR", 262:"VAL", 263:"ASP", 264:"ILE", 265:"GLY", 266:"PRO", 267:"GLY", 268:"LEU", 269:"HIP", 270:"TYR", 271:"LEU", 272:"GLN", 273:"GLU", 274:"ASP", 275:"ASN", 276:"PRO", 277:"ASP", 278:"LEU", 279:"ILE", 280:"GLY", 281:"SER", 282:"GLU", 283:"ILE", 284:"ALA", 285:"ARG", 286:"TRP", 287:"LEU", 288:"PRO", 289:"ALA", 290:"LEU", 291:"HIE", 292:"HIE", 293:"HIP"}
@@ -555,11 +557,11 @@ if __name__ == "__main__":
     # with open(argv[1], "rb") as fin:
     #     database = pickle.load(fin)
     # hbond_outfolder =argv[2]
-    dat_file = "/data/aravindramt/dean/tt/hbond/databases/database_1_O.dat"
+    dat_file = "/data/aravindramt/dean/tt/hbond/databases/database_1_T4.dat"
     with open(dat_file, "rb") as fin:
         database = pickle.load(fin)
-    hbond_outfolder= "/data/aravindramt/dean/tt/hbond/hbonds/hb_1_O"
-    plot_folder = "/data/aravindramt/dean/tt/hbond/plots/1_OPC"
+    hbond_outfolder= "/data/aravindramt/dean/tt/hbond/hbonds/hb_1_T4"
+    plot_folder = "/data/aravindramt/dean/tt/hbond/plots/1_TIP4P"
     # os.mkdir(plot_folder)
     # tag = "1_4_OPC_"
     # normalized_plot_radii_by_SC(database, argv[3], tag=tag)
@@ -579,6 +581,6 @@ if __name__ == "__main__":
 
     # plot_radii_by_restype(database, argv[2], tag=tag)
     # plot_radii(database, plot_folder)
-    plot_radii_by_HB(database, hbond_outfolder, plot_folder)
+    # plot_radii_by_HB(database, hbond_outfolder, plot_folder)
     # normalized_plot_HB_by_restype(database, hbond_outfolder, plot_folder)
-    # normalized_plot_radii_by_HB(database, hbond_outfolder, plot_folder)
+    normalized_plot_radii_by_HB(database, hbond_outfolder, plot_folder)

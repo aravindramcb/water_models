@@ -437,6 +437,7 @@ def consolidate_results(tt_results: str, groups_definitions: dict, save_location
                 except ValueError:
                     pass
                 # _combined_df.reset_index(inplace=True)
+                print(_combined_df)
                 print(_combined_df.sum())
                 sum_list = list(_combined_df.sum(axis=1))
                 # print(sum_list)

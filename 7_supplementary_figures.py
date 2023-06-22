@@ -306,10 +306,10 @@ def histogram_count_transit_time(tt_results:str, sim_results:str, gd:dict):
 
             # https://seaborn.pydata.org/generated/seaborn.histplot.html  <- see here for different 'stat' options
             sns.histplot(data=time_in_ps, ax=ax[r, c], stat="count", binwidth=10, binrange=(0, 400)
-                         , color=color, edgecolor='black', log_scale=False,kde=True)
+                         , color=color, edgecolor='black', log_scale=False,kde=False)
 
             # axvline is the median of the plot
-            ax[r,c].axvline(sum(time_in_ps)/len(time_in_ps),color='red',linewidth=2,linestyle='dashed')
+            # ax[r,c].axvline(sum(time_in_ps)/len(time_in_ps),color='red',linewidth=2,linestyle='dashed')
 
             ax[r,c].text(0.45,0.9,slowest,transform=ax[r,c].transAxes,va='top')
             # ax[r,c].text(0.65,0.9,fastest,transform=ax[r,c].transAxes,va='center',fontsize=7)
@@ -339,7 +339,7 @@ def histogram_count_transit_time(tt_results:str, sim_results:str, gd:dict):
     ax[3, 0].set_ylabel("Group 4")
     ax[4, 0].set_ylabel("Group 5")
     plt.tight_layout()
-    plt.savefig(f"/home/aravind/PhD_local/dean/figures/transit_time/hist_log_trt_{ylabel}test.png")
+    plt.savefig(f"/home/aravind/PhD_local/dean/figures/transit_time/hist_log_trt_{ylabel}manuscript.png")
     print("File saved")
 
 def histogram_matching_frames(tt_results:str,sim_results:str,gd:dict):

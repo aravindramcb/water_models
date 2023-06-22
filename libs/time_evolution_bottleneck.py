@@ -72,9 +72,9 @@ def get_bottleneck_radii(scid_orig_caver_ID: dict, sim_results_location: str):
     :return: Dataframe of sim_ID as column name and bottleneck radii as values for the simulation frames.
     """
     bottleneck_radius = pd.DataFrame()
-    print("The assigned caver clusters are: \n")
+    # print("The assigned caver clusters are: \n")
     for sim_id, cav_cluster_id in scid_orig_caver_ID.items():
-        print(sim_id, "->", cav_cluster_id)
+        # print(sim_id, "->", cav_cluster_id)
         csv_loc = 'caver_analyses/final_clustering/analysis/tunnel_characteristics.csv'
         csv_file = os.path.join(sim_results_location, sim_id, csv_loc)
         tc = pd.read_csv(csv_file, usecols=[1, 5])
