@@ -13,7 +13,7 @@ from libs import transport_events_analysis as s7, time_evolution_bottleneck as s
 import seaborn as sns
 
 
-def get_average_bottleneck(tunnels_def: list, simulation_results: str, tt_results: str):
+def get_average_bottleneck(tunnels_def: list, simulation_results: str, tt_results: str, save_loc: str):
     sc_details_loc = os.path.join(tt_results, "data", "super_clusters", "details", "initial_super_cluster_details.txt")
     original_ids_dict = s4.get_orig_caver_id(req_sc_ids=tunnels_def, initial_sc_details_txt=sc_details_loc,
                                              simulation_results_dir=simulation_results)
@@ -24,10 +24,12 @@ def get_average_bottleneck(tunnels_def: list, simulation_results: str, tt_result
     to_print_average = avg_df.mean(axis=0)
     to_print_std = avg_df.std(axis=0)
     print(f"Average: \n--------------\n{to_print_average}\n-------------\nStandard Deviation\n--------\n{to_print_std}")
+    save_name = os.path.join(save_loc, "average_bottleneck_main_figure.csv")
+    avg_df.to_csv(save_name)
     return avg_df
 
 
-def get_helix_distance(tunnel: str, simulation_results) -> pd.DataFrame:
+def get_helix_distance(tunnel: str, simulation_results: str, save_loc: str) -> pd.DataFrame:
     distance_from_csv = pd.read_csv(f'/mnt/gpu/dean/md/{tunnel}_openings.csv', index_col='Unnamed: 0')
     directories = os.listdir(simulation_results)
     directories.sort(key=lambda x: (x.split("_")[0][:-1], x))
@@ -44,24 +46,35 @@ def get_helix_distance(tunnel: str, simulation_results) -> pd.DataFrame:
         _mean_series = pd.Series([val for sublist in _df.values for val in sublist])
         mean_df[column_name] = _mean_series
         g += 15
+    save_name = os.path.join(save_loc, "helix_distance_main_figure.csv")
+    mean_df.to_csv(save_name)
     return mean_df
 
 
-def get_tt_events(consolidated_csv_file):
+def load_csv_file(consolidated_csv_file):
     consolidated_df = pd.read_csv(consolidated_csv_file)
     return consolidated_df
 
 
-def get_transit_time(tt_results, sim_results, group_definiton, type: str = 'combined'):
+def save_defaultdict_to_csv(defaultdict, filename):
+    import csv
+    with open(filename, 'w', newline='') as csvfile:
+        writer = csv.DictWriter(csvfile, fieldnames=defaultdict.keys())
+        writer.writeheader()
+        for key, value in defaultdict.items():
+            writer.writerow({key: value})
+
+
+def get_transit_time(tt_results, sim_results, group_definition, type: str = 'combined', save_loc: str = None):
     """
     Gets time spent by waters in the tunnel. Splits by models & groups
     :param type: type of event to get, it can be entry, release or combined
     :param tt_results: Transport Tools results location
     :param sim_results: Simulation results location
-    :param group_definiton: scid:[super_cluster numbers]
+    :param group_definition: scid:[super_cluster numbers]
     :return: Dataframe per group
     """
-    result = s7.get_transit_time(tt_results, sim_results, group_definiton, debug=False)
+    result = s7.get_transit_time(tt_results, sim_results, group_definition, debug=False)
     if type == 'combined':
         values = result[0]
     elif type == 'entry':
@@ -76,7 +89,7 @@ def get_transit_time(tt_results, sim_results, group_definiton, type: str = 'comb
 
     # Split into models + group
     i, j, k = (0, 5, 10)
-    median_df = defaultdict(pd.DataFrame)
+    median_dict = defaultdict(pd.DataFrame)
     for row in range(5):  # 5 groups
         _median_df = []
 
@@ -90,11 +103,26 @@ def get_transit_time(tt_results, sim_results, group_definiton, type: str = 'comb
                 _median_simulations.append(_median)
             _median_df.append(_median_simulations)
             i += 5
-        median_df[x_labels[row]] = pd.DataFrame(_median_df).T
-    return median_df
+        median_dict[x_labels[row]] = pd.DataFrame(_median_df).T
+    save_name = os.path.join(save_loc, type + "_transit_time_median.csv")
+    save_defaultdict_to_csv(median_dict, save_name)
+    return median_dict
 
 
-def plot_waters_per_frame(tt_results: str, sim_results: str, tunnels_definition: dict):
+def save_to_obj(tuple, filename):
+    import pickle
+    with open(filename, 'wb') as f:
+        pickle.dump(tuple, f)
+
+
+def load_from_obj(filename):
+    import pickle
+    with open(filename, 'rb') as f:
+        tuple = pickle.load(f)
+    return tuple
+
+
+def plot_waters_per_frame(tt_results: str, sim_results: str, tunnels_definition: dict, save_loc: str):
     """
     consolidated 1x5 plot of average and standard deviation of number of events per frame. The avg & std will
     imply how much waters are present per frame. This will say that in different groups on an average there are x amount
@@ -110,6 +138,11 @@ def plot_waters_per_frame(tt_results: str, sim_results: str, tunnels_definition:
     fetched_frames = t_events.get_transit_time(tt_results=tt_results, simulation_results=sim_results,
                                                groups_definitions=tunnels_definition,
                                                frame_numbers=True)
+
+    # Save the fetched_frames for easy future plotting
+    save_file_name = os.path.join(save_loc, "plot_waters_per_frames_fetched_frames.obj")
+    save_to_obj(fetched_frames, save_file_name)
+
     overall_color = sns.color_palette('deep', 3)
     sns.set(style="white", context="paper", font_scale=1)
     fig, ax = plt.subplots(nrows=3, ncols=5, figsize=(8, 6), dpi=300)
@@ -164,12 +197,6 @@ def plot_waters_per_frame(tt_results: str, sim_results: str, tunnels_definition:
             sns.barplot(data=group_df, ax=ax[event_type, group], palette=overall_color, errorbar='sd',
                         capsize=.1, linewidth=1, errwidth=1)
 
-            # Violin Plot if needed
-            # sns.violinplot(data=group_df,ax=ax[group],palette=overall_color)
-            # ax[group].get_children()[5].set_color('red')
-            # for i in [2,6,10]:
-            #     ax[group].get_children()[i].set_color('r')
-
             ax[event_type, group].set_xticklabels([])
             ax[event_type, group].set_ylim(0, 6.5)
         ax[event_type, 2].set_title(f"WATERS PER FRAME {events[event_type]} - P1 tunnel\n", fontweight='bold')
@@ -180,7 +207,8 @@ def plot_waters_per_frame(tt_results: str, sim_results: str, tunnels_definition:
         ax[event_type, 3].set_xlabel("Group 4")
         ax[event_type, 4].set_xlabel("Group 5")
     plt.tight_layout()
-    plt.savefig(f"/home/aravind/PhD_local/dean/figures/main_images/water_per_frame.png")
+    save_figure_name = os.path.join(save_loc, "water_per_frame.png")
+    plt.savefig(save_figure_name)
 
 
 def figure_two(caver_bottleneck, helix_distance, save_location: str = None):
@@ -222,10 +250,11 @@ def plot_water_transit_time(tunnels_definition, tt_results, simulation_results, 
     sns.set(style="white", context="paper", font_scale=0.8)
     fig, ax = plt.subplots(nrows=3, ncols=5, figsize=(8, 6), dpi=300)
     groups = ["Group 1", "Group 2", "Group 3", "Group 4", "Group 5"]
-    y_limits = [50,110,95,120,95]
-    rt_full = get_transit_time(tt_results, simulation_results, tunnels_definition, type='combined')
+    y_limits = [50, 110, 95, 120, 95]
+    rt_full = get_transit_time(tt_results, simulation_results, tunnels_definition, type='combined',
+                               save_loc=save_location)
 
-   # Entry and release
+    # Entry and release
     for i in range(5):
         data = rt_full[groups[i]]
         data = data.apply(lambda x: x * 10, axis=0)
@@ -235,14 +264,15 @@ def plot_water_transit_time(tunnels_definition, tt_results, simulation_results, 
         ts.set_xticklabels([])
         ts.set_xlabel(groups[i])
         # TO set uniform y axes per group
-        ts.set_ylim(0,y_limits[i])
+        ts.set_ylim(0, y_limits[i])
         i += 1
 
     ax[0, 2].set_title("Water transit time medians [Entry + Release] - P1 Tunnel ".upper(), fontweight='bold')
     ax[0, 0].set_ylabel("Time (ps)", fontweight="bold")
 
     # Entry
-    rt_entry = get_transit_time(tt_results, simulation_results, tunnels_definition, type='entry')
+    rt_entry = get_transit_time(tt_results, simulation_results, tunnels_definition, type='entry',
+                                save_loc=save_location)
     for i in range(5):
         data = rt_entry[groups[i]]
         data = data.apply(lambda x: x * 10, axis=0)
@@ -257,7 +287,8 @@ def plot_water_transit_time(tunnels_definition, tt_results, simulation_results, 
     ax[1, 0].set_ylabel("Time (ps)", fontweight="bold")
 
     # Release
-    rt_release = get_transit_time(tt_results, simulation_results, tunnels_definition, type='release')
+    rt_release = get_transit_time(tt_results, simulation_results, tunnels_definition, type='release',
+                                  save_loc=save_location)
     for i in range(5):
         data = rt_release[groups[i]]
         data = data.apply(lambda x: x * 10, axis=0)
@@ -330,6 +361,11 @@ def plot_percent_event_occurrence(tt_results: str, sim_results: str, tunnels_def
     fig, ax = plt.subplots(nrows=3, ncols=5, figsize=(8, 6), dpi=300)
     groups = ["Group 1", "Group 2", "Group 3", "Group 4", "Group 5"]
     events = s7.fraction_events_occurrence(tt_results, sim_results, tunnels_def)
+
+    # save all loaded events to a file
+    save_name= os.path.join(save_location,"plot_percent_event_occurrence_events.obj")
+    save_to_obj(events,save_name)
+
     entry_release = events[0:5]
     for i in range(5):
         data = entry_release[i]
@@ -341,7 +377,7 @@ def plot_percent_event_occurrence(tt_results: str, sim_results: str, tunnels_def
         ts.set_ylim(0, 100)
         i += 1
 
-    # insets becaue the first 2 plots have very small percentages
+    # insets because the first 2 plots have very small percentages
     # for i in range(2):
     #     data = entry_release[i]
     #     data = data.apply(lambda x: x * 100, axis=0)
@@ -398,23 +434,25 @@ def main():
     P2 = [3, 4, 6, 8, 11, 16, 25, 27, 41, 43, 44, 50, 58]
     P3 = [10]
     tt_results = '/data/aravindramt/dean/tt/tt_0_9_5/'
-    simulation_results = "/data/aravindramt/dean/tt/minimal_data"
+    simulation_results = "/data/aravindramt/dean/md/simulations/"
     save_location = "/home/aravind/PhD_local/dean/figures/main_images/"
     consolidated_csv_file = '/home/aravind/PhD_local/dean/figures/transport_tools/p1_only.csv'
 
-    bottleneck = get_average_bottleneck(tunnels_def=P1, simulation_results=simulation_results, tt_results=tt_results)
-    # helix = get_helix_distance("p1", simulation_results)
-    # tt = get_tt_events(consolidated_csv_file)
-    # figure_two(bottleneck, helix, save_location)
+    bottleneck = get_average_bottleneck(tunnels_def=P1, simulation_results=simulation_results, tt_results=tt_results
+                                        ,save_loc=save_location)
+    helix = get_helix_distance("p1", simulation_results,save_loc=save_location)
+    tt = load_csv_file(consolidated_csv_file)
+    figure_two(bottleneck, helix, save_location)
     # tt_events(tt, save_location)
     # plot_water_retention_time(rt, save_location, normailzed="bygroup")
 
     # NEW !!
     # plot_water_transit_time(tunnels_definition=main_tunnel, tt_results=tt_results,
     #                         simulation_results=simulation_results, save_location=save_location)
-    #
-    # plot_waters_per_frame(tt_results=tt_results, sim_results=simulation_results, tunnels_definition=main_tunnel)
-    # plot_percent_event_occurrence(tt_results, simulation_results, main_tunnel, save_location)
+
+    plot_waters_per_frame(tt_results=tt_results, sim_results=simulation_results, tunnels_definition=main_tunnel,
+                          save_loc=save_location)
+    plot_percent_event_occurrence(tt_results, simulation_results, main_tunnel, save_location)
 
 
 if __name__ == '__main__':
