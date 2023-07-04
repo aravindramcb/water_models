@@ -253,6 +253,9 @@ def plot_water_transit_time(tunnels_definition, tt_results, simulation_results, 
     y_limits = [50, 110, 95, 120, 95]
     rt_full = get_transit_time(tt_results, simulation_results, tunnels_definition, type='combined',
                                save_loc=save_location)
+    # Save the fetched_frames for easy future plotting
+    save_file_name = os.path.join(save_location, "plot_water_transit_time_rt_full.obj")
+    save_to_obj(rt_full, save_file_name)
 
     # Entry and release
     for i in range(5):
@@ -440,15 +443,15 @@ def main():
 
     bottleneck = get_average_bottleneck(tunnels_def=P1, simulation_results=simulation_results, tt_results=tt_results
                                         ,save_loc=save_location)
-    helix = get_helix_distance("p1", simulation_results,save_loc=save_location)
-    tt = load_csv_file(consolidated_csv_file)
-    figure_two(bottleneck, helix, save_location)
+    # helix = get_helix_distance("p1", simulation_results,save_loc=save_location)
+    # tt = load_csv_file(consolidated_csv_file)
+    # figure_two(bottleneck, helix, save_location)
     # tt_events(tt, save_location)
     # plot_water_retention_time(rt, save_location, normailzed="bygroup")
 
     # NEW !!
-    # plot_water_transit_time(tunnels_definition=main_tunnel, tt_results=tt_results,
-    #                         simulation_results=simulation_results, save_location=save_location)
+    plot_water_transit_time(tunnels_definition=main_tunnel, tt_results=tt_results,
+                            simulation_results=simulation_results, save_location=save_location)
 
     plot_waters_per_frame(tt_results=tt_results, sim_results=simulation_results, tunnels_definition=main_tunnel,
                           save_loc=save_location)
