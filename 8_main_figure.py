@@ -35,7 +35,7 @@ def get_helix_distance(tunnel: str, simulation_results: str, save_loc: str) -> p
     directories.sort(key=lambda x: (x.split("_")[0][:-1], x))
     distance_from_csv = distance_from_csv.reindex(columns=directories)
     models = ['opc', 'tip3p', 'tip4pew']
-    groups = ["Group 1", "Group 2", "Group 3", "Group 4", "Group 5"]
+    groups = ["TCG0", "TCG1", "TCG2", "TCG3", "TCG4"]
 
     # get mean distance of group, regardless of models
     g = 0
@@ -84,7 +84,7 @@ def get_transit_time(tt_results, sim_results, group_definition, type: str = 'com
     else:
         print("Specify correct type - combined, entry, release")
     models = ['opc', 'tip3p', 'tip4pew']
-    x_labels = ["Group 1", "Group 2", "Group 3", "Group 4", "Group 5"]
+    x_labels = ["TCG0", "TCG1", "TCG2", "TCG3", "TCG4"]
     names = ["1", "1.4", "1.8", "2.4", "3"]
 
     # Split into models + group
@@ -214,7 +214,7 @@ def plot_waters_per_frame(tt_results: str, sim_results: str, tunnels_definition:
 def figure_two(caver_bottleneck, helix_distance, save_location: str = None):
     import seaborn as sns
     import matplotlib.pyplot as plt
-    groups = ["Group 1", "Group 2", "Group 3", "Group 4", "Group 5"]
+    groups = ["TCG0", "TCG1", "TCG2", "TCG3", "TCG4"]
     sns.set(style='ticks')
     fig = plt.figure(figsize=(15, 6), dpi=300, constrained_layout=False)
     sns.set_context(context="paper", font_scale=2)
@@ -237,7 +237,7 @@ def figure_two(caver_bottleneck, helix_distance, save_location: str = None):
     ax1 = fig.add_subplot(ga[1, :])
     bp = sns.boxplot(data=caver_bottleneck, ax=ax1, boxprops=boxprops, whiskerprops=whiskerprops,
                      capprops=capprops, flierprops=flierprops)
-    bp.set_title("B) Average bottleneck radii of P1 tunnel")
+    bp.set_title("Average bottleneck radii of P1 tunnel")
     bp.set_xticklabels(groups)
     bp.set_ylabel("Bottleneck (Å)")
 
@@ -247,22 +247,27 @@ def figure_two(caver_bottleneck, helix_distance, save_location: str = None):
 
 
 def plot_water_transit_time(tunnels_definition, tt_results, simulation_results, save_location):
-    sns.set(style="white", context="paper", font_scale=0.8)
-    fig, ax = plt.subplots(nrows=3, ncols=5, figsize=(8, 6), dpi=300)
-    groups = ["Group 1", "Group 2", "Group 3", "Group 4", "Group 5"]
-    y_limits = [50, 110, 95, 120, 95]
-    rt_full = get_transit_time(tt_results, simulation_results, tunnels_definition, type='combined',
-                               save_loc=save_location)
-    # Save the fetched_frames for easy future plotting
-    save_file_name = os.path.join(save_location, "plot_water_transit_time_rt_full.obj")
-    save_to_obj(rt_full, save_file_name)
+    sns.set(style="white", context="paper", font_scale=1)
+    fig, ax = plt.subplots(nrows=3, ncols=4, figsize=(8, 6), dpi=300)
+    plt.suptitle("Transit time median")
+    groups = ["TCG1", "TCG2", "TCG3", "TCG4"]
+    # y_limits = [110, 95, 120, 95]
+    y_limits =[120,120,120,120]
+    obj = os.path.join(save_location,"plot_water_transit_time_rt_full.obj")
+    if not os.path.exists(obj):
+        rt_full = get_transit_time(tt_results, simulation_results, tunnels_definition, type='combined',
+                                   save_loc=save_location)
+        # Save the fetched_frames for easy future plotting
+        save_file_name = os.path.join(save_location, "plot_water_transit_time_rt_full.obj")
+        save_to_obj(rt_full, save_file_name)
+    else:
+        rt_full = load_from_obj(obj)
 
     # Entry and release
-    for i in range(5):
+    for i in range(4):
         data = rt_full[groups[i]]
         data = data.apply(lambda x: x * 10, axis=0)
         print(groups[i], "Entry&Release\n", data)
-
         ts = sns.barplot(data=data, ax=ax[0, i], width=0.5, errorbar='se', capsize=.1, linewidth=1, errwidth=1)
         ts.set_xticklabels([])
         ts.set_xlabel(groups[i])
@@ -270,13 +275,13 @@ def plot_water_transit_time(tunnels_definition, tt_results, simulation_results, 
         ts.set_ylim(0, y_limits[i])
         i += 1
 
-    ax[0, 2].set_title("Water transit time medians [Entry + Release] - P1 Tunnel ".upper(), fontweight='bold')
+    # ax[0, 1].set_title("Water transit time medians [Entry + Release] - P1 Tunnel ".upper(), fontweight='bold',loc='left')
     ax[0, 0].set_ylabel("Time (ps)", fontweight="bold")
 
     # Entry
     rt_entry = get_transit_time(tt_results, simulation_results, tunnels_definition, type='entry',
                                 save_loc=save_location)
-    for i in range(5):
+    for i in range(4):
         data = rt_entry[groups[i]]
         data = data.apply(lambda x: x * 10, axis=0)
         print(groups[i], "Entry\n", data)
@@ -286,13 +291,13 @@ def plot_water_transit_time(tunnels_definition, tt_results, simulation_results, 
         # TO set uniform y axes per group
         ts_entry.set_ylim(0, y_limits[i])
         i += 1
-    ax[1, 2].set_title("Water transit time medians [Entry] - P1 Tunnel ".upper(), fontweight='bold')
+    # ax[1, 1].set_title("Water transit time medians [Entry] - P1 Tunnel ".upper(), fontweight='bold',loc='left')
     ax[1, 0].set_ylabel("Time (ps)", fontweight="bold")
 
     # Release
     rt_release = get_transit_time(tt_results, simulation_results, tunnels_definition, type='release',
                                   save_loc=save_location)
-    for i in range(5):
+    for i in range(4):
         data = rt_release[groups[i]]
         data = data.apply(lambda x: x * 10, axis=0)
         print(groups[i], "Release\n", data)
@@ -302,23 +307,25 @@ def plot_water_transit_time(tunnels_definition, tt_results, simulation_results, 
         # TO set uniform y axes per group
         ts_release.set_ylim(0, y_limits[i])
         i += 1
-    ax[2, 2].set_title("Water transit time medians [Release] - P1 Tunnel ".upper(), fontweight='bold')
+    # ax[2, 1].set_title("Water transit time medians [Release] - P1 Tunnel".upper(), fontweight='bold',loc='center')
     ax[2, 0].set_ylabel("Time (ps)", fontweight="bold")
 
     save_file = os.path.join(save_location, "transit_time_median.png")
-    plt.tight_layout()
+    plt.tight_layout(h_pad=2)
     plt.savefig(save_file)
+
+    print(f"saved to {save_file}")
     plt.close()
 
 
 def tt_events(tt_events, save_location, normailzed=None):
     sns.set(style="white", context="paper", font_scale=1.3)
-    fig, ax = plt.subplots(nrows=1, ncols=5, figsize=(10, 3), dpi=300)
-    groups = ["Group 1", "Group 2", "Group 3", "Group 4", "Group 5"]
+    fig, ax = plt.subplots(nrows=1, ncols=4, figsize=(10, 3), dpi=300)
+    groups = [ "TCG1", "TCG2", "TCG3", "TCG4"]
     # Transport events
     j = 0
     tt_axes = []
-    for i in range(5):
+    for i in range(4):
         _df = tt_events.iloc[:, j:j + 3]
         # print(_df)
         if normailzed == 'bygroup':
@@ -347,12 +354,12 @@ def tt_events(tt_events, save_location, normailzed=None):
         tt_axes.append(axs)
         j += 3
 
-    tt_axes[2].set_title("Transport Events - P1\n".upper(), fontweight="bold")
+    tt_axes[2].set_title("Transport Events - P1\n".upper(), fontweight="bold",loc='left')
     if normailzed is not None:
         tt_axes[0].set_ylabel(f"Events - Normalized")
         save_name = os.path.join(save_location, "tt_events_norm.png")
     else:
-        tt_axes[0].set_ylabel("Number of Events")
+        tt_axes[0].set_ylabel("Number of transported \n water molecules")
         save_name = os.path.join(save_location, "tt_events.png")
 
     plt.tight_layout()
@@ -361,16 +368,17 @@ def tt_events(tt_events, save_location, normailzed=None):
 
 def plot_percent_event_occurrence(tt_results: str, sim_results: str, tunnels_def: dict, save_location: str):
     sns.set(style="white", context="paper", font_scale=0.8)
-    fig, ax = plt.subplots(nrows=3, ncols=5, figsize=(8, 6), dpi=300)
-    groups = ["Group 1", "Group 2", "Group 3", "Group 4", "Group 5"]
+    fig, ax = plt.subplots(nrows=3, ncols=4, figsize=(8, 6), dpi=300)
+    groups = ["TCG1", "TCG2", "TCG3", "TCG4"]
+    plt.suptitle("ratio of conductivity")
     events = s7.fraction_events_occurrence(tt_results, sim_results, tunnels_def)
 
     # save all loaded events to a file
     save_name= os.path.join(save_location,"plot_percent_event_occurrence_events.obj")
     save_to_obj(events,save_name)
 
-    entry_release = events[0:5]
-    for i in range(5):
+    entry_release = events[1:5]
+    for i in range(4):
         data = entry_release[i]
         data = data.apply(lambda x: x * 100, axis=0)
         # print(groups[i], "Entry&Release\n", data)
@@ -381,46 +389,74 @@ def plot_percent_event_occurrence(tt_results: str, sim_results: str, tunnels_def
         i += 1
 
     # insets because the first 2 plots have very small percentages
-    # for i in range(2):
-    #     data = entry_release[i]
-    #     data = data.apply(lambda x: x * 100, axis=0)
-    #     left, bottom, width, height = [0.25, 0.4, 0.5, 0.4]
-    #     inset_axes = ax[0, i].inset_axes([left, bottom, width, height])
-    #     inset_plot = sns.barplot(data=data, ax=inset_axes, width=0.5, errorbar='se', capsize=.1, linewidth=1,
-    #                              errwidth=1)
-    #     inset_plot.set_xticks([])
-    #     # inset_plot.set_yticks([])
-    #     inset_plot.set_xlabel('')
-    #     inset_plot.set_ylabel('')
-    #     inset_plot.set_ylim(0, 4)
 
-    ax[0, 2].set_title("% of frames per simulation involving Entry + Release Events - P1 Tunnel ".upper(),
-                       fontweight='bold')
+    data = entry_release[0]
+    data = data.apply(lambda x: x * 100, axis=0)
+    left, bottom, width, height = [0.25, 0.4, 0.5, 0.4]
+    inset_axes = ax[0, 0].inset_axes([left, bottom, width, height])
+    inset_plot = sns.barplot(data=data, ax=inset_axes, width=0.5, errorbar='se', capsize=.1, linewidth=1,
+                             errwidth=1)
+    inset_plot.set_xticks([])
+    # inset_plot.set_yticks([])
+    inset_plot.set_xlabel('')
+    inset_plot.set_ylabel('')
+    inset_plot.set_ylim(0, 4)
+
+    # ax[0, 2].set_title("% of frames per simulation involving Entry + Release Events - P1 Tunnel ".upper(),
+    #                    fontweight='bold')
     ax[0, 0].set_ylabel("% Frames", fontweight="bold")
 
-    entry = events[5:10]
-    for i in range(5):
+    entry = events[6:10]
+    for i in range(4):
         data = entry[i]
         data = data.apply(lambda x: x * 100, axis=0)
         print(groups[i], "Entry\n", data)
         ts_entry = sns.barplot(data=data, ax=ax[1, i], width=0.5, errorbar='se', capsize=.1, linewidth=1, errwidth=1)
         ts_entry.set_xticklabels([])
         ts_entry.set_xlabel(groups[i])
+        ts_entry.set_ylim(0,100)
         i += 1
-    ax[1, 2].set_title("% of frames per simulation involving Entry Events - P1 Tunnel ".upper(), fontweight='bold')
+    # ax[1, 2].set_title("% of frames per simulation involving Entry Events - P1 Tunnel ".upper(), fontweight='bold')
     ax[1, 0].set_ylabel("% Frames", fontweight="bold")
 
-    release = events[10:15]
-    for i in range(5):
+    # inset
+    data = entry[0]
+    data = data.apply(lambda x: x * 100, axis=0)
+    left, bottom, width, height = [0.25, 0.4, 0.5, 0.4]
+    inset_axes = ax[1, 0].inset_axes([left, bottom, width, height])
+    inset_plot = sns.barplot(data=data, ax=inset_axes, width=0.5, errorbar='se', capsize=.1, linewidth=1,
+                             errwidth=1)
+    inset_plot.set_xticks([])
+    # inset_plot.set_yticks([])
+    inset_plot.set_xlabel('')
+    inset_plot.set_ylabel('')
+    inset_plot.set_ylim(0, 4)
+
+    release = events[11:15]
+    for i in range(4):
         data = release[i]
         data = data.apply(lambda x: x * 100, axis=0)
         print(groups[i], "Release\n", data)
         ts_release = sns.barplot(data=data, ax=ax[2, i], width=0.5, errorbar='se', capsize=.1, linewidth=1, errwidth=1)
         ts_release.set_xticklabels([])
         ts_release.set_xlabel(groups[i])
+        ts_release.set_ylim(0,100)
         i += 1
-    ax[2, 2].set_title("% of frames per simulation involving Release Events- P1 Tunnel ".upper(), fontweight='bold')
+    # ax[2, 2].set_title("% of frames per simulation involving Release Events- P1 Tunnel ".upper(), fontweight='bold')
     ax[2, 0].set_ylabel("% Frames", fontweight="bold")
+
+    # inset
+    data = release[0]
+    data = data.apply(lambda x: x * 100, axis=0)
+    left, bottom, width, height = [0.25, 0.4, 0.5, 0.4]
+    inset_axes = ax[2, 0].inset_axes([left, bottom, width, height])
+    inset_plot = sns.barplot(data=data, ax=inset_axes, width=0.5, errorbar='se', capsize=.1, linewidth=1,
+                             errwidth=1)
+    inset_plot.set_xticks([])
+    # inset_plot.set_yticks([])
+    inset_plot.set_xlabel('')
+    inset_plot.set_ylabel('')
+    inset_plot.set_ylim(0, 4)
 
     # save_file = os.path.join(save_location, "fraction_frames_events_inset.png")
     save_file = os.path.join(save_location, "percent_frames_events.png")
@@ -441,8 +477,8 @@ def main():
     save_location = "/home/aravind/PhD_local/dean/figures/main_images/"
     consolidated_csv_file = '/home/aravind/PhD_local/dean/figures/transport_tools/p1_only.csv'
 
-    bottleneck = get_average_bottleneck(tunnels_def=P1, simulation_results=simulation_results, tt_results=tt_results
-                                        ,save_loc=save_location)
+    # bottleneck = get_average_bottleneck(tunnels_def=P1, simulation_results=simulation_results, tt_results=tt_results
+    #                                     ,save_loc=save_location)
     # helix = get_helix_distance("p1", simulation_results,save_loc=save_location)
     # tt = load_csv_file(consolidated_csv_file)
     # figure_two(bottleneck, helix, save_location)
@@ -450,11 +486,11 @@ def main():
     # plot_water_retention_time(rt, save_location, normailzed="bygroup")
 
     # NEW !!
-    plot_water_transit_time(tunnels_definition=main_tunnel, tt_results=tt_results,
-                            simulation_results=simulation_results, save_location=save_location)
+    # plot_water_transit_time(tunnels_definition=main_tunnel, tt_results=tt_results,
+    #                         simulation_results=simulation_results, save_location=save_location)
 
-    plot_waters_per_frame(tt_results=tt_results, sim_results=simulation_results, tunnels_definition=main_tunnel,
-                          save_loc=save_location)
+    # plot_waters_per_frame(tt_results=tt_results, sim_results=simulation_results, tunnels_definition=main_tunnel,
+    #                       save_loc=save_location)
     plot_percent_event_occurrence(tt_results, simulation_results, main_tunnel, save_location)
 
 
