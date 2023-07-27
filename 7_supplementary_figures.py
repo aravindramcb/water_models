@@ -11,6 +11,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import os
 from libs import transport_events_analysis as tt_events
+from libs import time_evolution_bottleneck as btlnk
 
 
 def plot_consolidated_result(consolidated_csv_file: str, unassigned_csv: str, plot_normalized: bool = False):
@@ -398,13 +399,14 @@ def histogram_matching_frames(tt_results:str,sim_results:str,gd:dict):
     plt.savefig(f"/home/aravind/PhD_local/dean/figures/retention_time/hist_frames_{ylabel}_kde.png")
     print(frames)
 
+
 def main():
-    tt_results = "/mnt/gpu/dean/tt/tt_0_9_5"
+    tt_results = "/data/aravindramt/dean/tt/tt_0_9_5"
     unassigned_split = "/home/aravind/PhD_local/dean/figures/transport_tools/unassigned_events_sep.csv"
     groups_def = {"P1": [1, 2, 5, 7, 12, 30, 31], "P2": [3, 4, 6, 8, 11, 16, 25, 27, 41, 43, 44, 50, 58],
                   "P3": [10]}
     main_tunnel = {"P1": [1, 2, 5, 7, 12, 30, 31]}
-    simulation_results = "/data/aravindramt/dean/tt/minimal_data"
+    simulation_results = "/data/aravindramt/dean/md/simulations/"
     sim_results = "/data/aravindramt/dean/md/simulations/"
     save_loc = "/home/aravind/PhD_local/dean/figures/transit_time"
 

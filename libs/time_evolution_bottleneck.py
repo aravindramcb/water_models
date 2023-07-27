@@ -12,7 +12,7 @@ import pandas as pd
 from pandas import DataFrame
 
 
-def get_orig_caver_id(req_sc_ids, initial_sc_details_txt, simulation_results_dir):
+def get_orig_caver_id(req_sc_ids:list, initial_sc_details_txt:str, simulation_results_dir:str):
     """
     For the given SuperCluster IDs, this will get the highest priority corresponding original caver cluster ID from
     initial_super_cluster_details.txt
@@ -126,24 +126,24 @@ def plot_bottlenecks(bottleneck_dataframe: DataFrame, group_name: str):
     plt.suptitle(f"BOTTLENECK RADII OF TUNNEL {group_name}", fontsize=20, fontweight='bold')
     # plt.suptitle("BOTTLENECK RADII OF P3 TUNNEL", fontsize=20, fontweight='bold',y=0.98)
     box1 = sns.boxplot(data=df_1, ax=axes[0, 0], color='b')
-    box1.set_xlabel("Group 1A", fontsize=20, fontweight='bold')
+    box1.set_xlabel("TCG0", fontsize=20, fontweight='bold')
     box1.artists[0].set_facecolor('grey')
 
     box2 = sns.boxplot(data=df_1_4, ax=axes[0, 1], color='g')
-    box2.set_xlabel("Group 1.4A", fontsize=20, fontweight='bold')
+    box2.set_xlabel("TCG1", fontsize=20, fontweight='bold')
     # box2.artists[0].set_facecolor('grey')
 
     box3 = sns.boxplot(data=df_1_8, ax=axes[1, 0], color='r')
-    box3.set_xlabel("Group 1.8A", fontsize=20, fontweight='bold')
+    box3.set_xlabel("TCG2", fontsize=20, fontweight='bold')
     box3.set_ylabel("Bottleneck radii (Å)", fontsize=20, fontweight='bold')
     # box3.artists[0].set_facecolor('grey')
 
     box4 = sns.boxplot(data=df_2_4, ax=axes[1, 1], color='c')
-    box4.set_xlabel("Group 2.4A", fontsize=20, fontweight='bold')
+    box4.set_xlabel("TCG3", fontsize=20, fontweight='bold')
     # box4.artists[0].set_facecolor('grey')
 
     box5 = sns.boxplot(data=df_3, ax=axes[2, 0], color='m')
-    box5.set_xlabel("Group 3A", fontsize=20, fontweight='bold')
+    box5.set_xlabel("TCG4", fontsize=20, fontweight='bold')
     # box5.artists[0].set_facecolor('grey')
     x_tick_location = np.arange(16)
     for ax in axes.flatten():
@@ -155,6 +155,7 @@ def plot_bottlenecks(bottleneck_dataframe: DataFrame, group_name: str):
     color_pal = {'1A': 'b', '1.4A': 'g', '1.8A': 'r', '2.4A': 'c', '3A': 'm'}
     box6 = sns.boxplot(data=avg_df, palette=color_pal)
     box6.set_xlabel("Overall", fontsize=20, fontweight='bold')
+    box6.set_xticklabels(box6.get_xticklabels(),["TCG0","TCG1","TCG2","TCG3","TCG4"])
     plt.tight_layout(pad=1.8)
     plt.savefig(f"/home/aravind/PhD_local/dean/figures/bottlenecks/time_evolution/{group_name}.png")
 
@@ -231,7 +232,7 @@ if __name__ == '__main__':
     P3 = [10]
     sc_details_file_loc = "/data/aravindramt/dean/tt/tt_0_9_5/data/super_clusters/details" \
                           "/initial_super_cluster_details.txt"
-    simulation_results = "/data/aravindramt/dean/tt/minimal_data"
+    simulation_results = "/data/aravindramt/dean/md/simulations/"
     save_location = "/home/aravind/PhD_local/dean/figures/bottlenecks/time_evolution/"
 
     # Get the original caver IDs for the given group name (P1,P2,P3) for all simulations
