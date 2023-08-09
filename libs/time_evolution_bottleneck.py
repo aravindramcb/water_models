@@ -81,6 +81,7 @@ def get_bottleneck_radii(scid_orig_caver_ID: dict, sim_results_location: str):
         tc_filtered = tc.loc[(tc[" Tunnel cluster"] == cav_cluster_id)]
         bottleneck_radius[sim_id] = (tc_filtered[" Bottleneck radius"].reset_index(drop=True))
     bl_sorted_df = (bottleneck_radius.reindex(sorted(bottleneck_radius.columns), axis=1))
+    bl_sorted_df.to_csv("/home/aravind/PhD_local/dean/figures/bottlenecks/time_evolution/bottleneck_per_sim.csv")
     return bl_sorted_df
 
 
@@ -91,35 +92,43 @@ def plot_bottlenecks(bottleneck_dataframe: DataFrame, group_name: str):
 
     bl_sorted_df = bottleneck_dataframe
 
-    # Prepare data
+    # # Prepare data
     col_names = bl_sorted_df.columns.values.tolist()
-    df_melt = pd.melt(bl_sorted_df.reset_index(), id_vars=['index'], value_vars=col_names)
-    df_melt.columns = ['index', 'Sim_ID', 'Bottleneck']
+    # df_melt = pd.melt(bl_sorted_df.reset_index(), id_vars=['index'], value_vars=col_names)
+    # df_melt.columns = ['index', 'Sim_ID', 'Bottleneck']
+    #
+    # # Group data
+    # avg_1 = pd.melt(bl_sorted_df.iloc[:, 30:45].reset_index(), id_vars='index', value_vars=col_names[30:45])
+    # avg_1.columns = ['index', 'Sim_ID', 'Whole']
+    # avg_1_4 = pd.melt(bl_sorted_df.iloc[:, 0:15].reset_index(), id_vars='index', value_vars=col_names[0:15])
+    # avg_1_4.columns = ['index', 'Sim_ID', 'Whole']
+    # avg_1_8 = pd.melt(bl_sorted_df.iloc[:, 15:30].reset_index(), id_vars='index', value_vars=col_names[15:30])
+    # avg_1_8.columns = ['index', 'Sim_ID', 'Whole']
+    # avg_2_4 = pd.melt(bl_sorted_df.iloc[:, 45:60].reset_index(), id_vars='index', value_vars=col_names[45:60])
+    # avg_2_4.columns = ['index', 'Sim_ID', 'Whole']
+    # avg_3 = pd.melt(bl_sorted_df.iloc[:, 60:75].reset_index(), id_vars='index', value_vars=col_names[60:75])
+    # avg_3.columns = ['index', 'Sim_ID', 'Whole']
+    #
+    # avg_df = pd.concat([avg_1.loc[:, 'Whole'], avg_1_4.loc[:, 'Whole'], avg_1_8.loc[:, 'Whole'],
+    #                     avg_2_4.loc[:, 'Whole'], avg_3.loc[:, 'Whole']], axis=1)
+    # avg_df.columns = ['1A', '1.4A', '1.8A', '2.4A', '3A']
+    #
+    # # Concat data per group
+    # df_1 = pd.concat([avg_1.loc[:, 'Whole'], bl_sorted_df.iloc[:, 30:45]], axis=1)
+    # df_1_4 = pd.concat([avg_1_4.loc[:, 'Whole'], bl_sorted_df.iloc[:, 0:15]], axis=1)
+    # df_1_8 = pd.concat([avg_1_8.loc[:, 'Whole'], bl_sorted_df.iloc[:, 15:30]], axis=1)
+    # df_2_4 = pd.concat([avg_2_4.loc[:, 'Whole'], bl_sorted_df.iloc[:, 45:60]], axis=1)
+    # df_3 = pd.concat([avg_3.loc[:, 'Whole'], bl_sorted_df.iloc[:, 60:75]], axis=1)
+    #
+    # df without whole
 
-    # Group data
-    avg_1 = pd.melt(bl_sorted_df.iloc[:, 30:45].reset_index(), id_vars='index', value_vars=col_names[30:45])
-    avg_1.columns = ['index', 'Sim_ID', 'Whole']
-    avg_1_4 = pd.melt(bl_sorted_df.iloc[:, 0:15].reset_index(), id_vars='index', value_vars=col_names[0:15])
-    avg_1_4.columns = ['index', 'Sim_ID', 'Whole']
-    avg_1_8 = pd.melt(bl_sorted_df.iloc[:, 15:30].reset_index(), id_vars='index', value_vars=col_names[15:30])
-    avg_1_8.columns = ['index', 'Sim_ID', 'Whole']
-    avg_2_4 = pd.melt(bl_sorted_df.iloc[:, 45:60].reset_index(), id_vars='index', value_vars=col_names[45:60])
-    avg_2_4.columns = ['index', 'Sim_ID', 'Whole']
-    avg_3 = pd.melt(bl_sorted_df.iloc[:, 60:75].reset_index(), id_vars='index', value_vars=col_names[60:75])
-    avg_3.columns = ['index', 'Sim_ID', 'Whole']
+    df_1 = bl_sorted_df.iloc[:, 30:45]
+    df_1_4 = bl_sorted_df.iloc[:, 0:15]
+    df_1_8 = bl_sorted_df.iloc[:, 15:30]
+    df_2_4 = bl_sorted_df.iloc[:, 45:60]
+    df_3 = bl_sorted_df.iloc[:, 60:75]
 
-    avg_df = pd.concat([avg_1.loc[:, 'Whole'], avg_1_4.loc[:, 'Whole'], avg_1_8.loc[:, 'Whole'],
-                        avg_2_4.loc[:, 'Whole'], avg_3.loc[:, 'Whole']], axis=1)
-    avg_df.columns = ['1A', '1.4A', '1.8A', '2.4A', '3A']
-
-    # Concat data per group
-    df_1 = pd.concat([avg_1.loc[:, 'Whole'], bl_sorted_df.iloc[:, 30:45]], axis=1)
-    df_1_4 = pd.concat([avg_1_4.loc[:, 'Whole'], bl_sorted_df.iloc[:, 0:15]], axis=1)
-    df_1_8 = pd.concat([avg_1_8.loc[:, 'Whole'], bl_sorted_df.iloc[:, 15:30]], axis=1)
-    df_2_4 = pd.concat([avg_2_4.loc[:, 'Whole'], bl_sorted_df.iloc[:, 45:60]], axis=1)
-    df_3 = pd.concat([avg_3.loc[:, 'Whole'], bl_sorted_df.iloc[:, 60:75]], axis=1)
-
-    x_labels = ['Whole'] + [col_names[i].split(sep='_', maxsplit=1)[1] for i in range(15)]
+    x_labels = [col_names[i].split(sep='_', maxsplit=1)[1] for i in range(15)]
     fig, axes = plt.subplots(3, 2, figsize=(30, 25), dpi=150)
     plt.subplots_adjust(hspace=0.3, top=1)
     sns.set()
@@ -127,7 +136,7 @@ def plot_bottlenecks(bottleneck_dataframe: DataFrame, group_name: str):
     # plt.suptitle("BOTTLENECK RADII OF P3 TUNNEL", fontsize=20, fontweight='bold',y=0.98)
     box1 = sns.boxplot(data=df_1, ax=axes[0, 0], color='b')
     box1.set_xlabel("TCG0", fontsize=20, fontweight='bold')
-    box1.artists[0].set_facecolor('grey')
+    # box1.artists[0].set_facecolor('grey')
 
     box2 = sns.boxplot(data=df_1_4, ax=axes[0, 1], color='g')
     box2.set_xlabel("TCG1", fontsize=20, fontweight='bold')
@@ -145,7 +154,7 @@ def plot_bottlenecks(bottleneck_dataframe: DataFrame, group_name: str):
     box5 = sns.boxplot(data=df_3, ax=axes[2, 0], color='m')
     box5.set_xlabel("TCG4", fontsize=20, fontweight='bold')
     # box5.artists[0].set_facecolor('grey')
-    x_tick_location = np.arange(16)
+    x_tick_location = np.arange(15)
     for ax in axes.flatten():
         ax.set_ylim(bottom=0.8, top=4)
         ax.set_xticks(x_tick_location)
@@ -153,11 +162,11 @@ def plot_bottlenecks(bottleneck_dataframe: DataFrame, group_name: str):
         ax.tick_params(axis='y', labelsize=20)
         sns.set_theme(style='darkgrid')
     color_pal = {'1A': 'b', '1.4A': 'g', '1.8A': 'r', '2.4A': 'c', '3A': 'm'}
-    box6 = sns.boxplot(data=avg_df, palette=color_pal)
-    box6.set_xlabel("Overall", fontsize=20, fontweight='bold')
-    box6.set_xticklabels(box6.get_xticklabels(),["TCG0","TCG1","TCG2","TCG3","TCG4"])
+    # box6 = sns.boxplot(data=avg_df, palette=color_pal)
+    # box6.set_xlabel("Overall", fontsize=20, fontweight='bold')
+    # box6.set_xticklabels(box6.get_xticklabels(),["TCG0","TCG1","TCG2","TCG3","TCG4"])
     plt.tight_layout(pad=1.8)
-    plt.savefig(f"/home/aravind/PhD_local/dean/figures/bottlenecks/time_evolution/{group_name}.png")
+    plt.savefig(f"/home/aravind/PhD_local/dean/figures/bottlenecks/time_evolution/{group_name}_manuscript.png")
 
 
 def process_bottleneck(bottleneck_dataframe):
@@ -238,11 +247,12 @@ if __name__ == '__main__':
     # Get the original caver IDs for the given group name (P1,P2,P3) for all simulations
     original_ids_dict = get_orig_caver_id(req_sc_ids=P1, initial_sc_details_txt=sc_details_file_loc,
                                           simulation_results_dir=simulation_results)
-
+    #
     # Get bottlenecks for the original Ids for all simulations
     bottlenecks = get_bottleneck_radii(scid_orig_caver_ID=original_ids_dict, sim_results_location=simulation_results)
 
     # Plot per group
+    bottlenecks = pd.read_csv("/home/aravind/PhD_local/dean/figures/bottlenecks/time_evolution/bottleneck_per_sim.csv")
     plot_bottlenecks(bottleneck_dataframe=bottlenecks, group_name="P1")
 
     # Plot overall
