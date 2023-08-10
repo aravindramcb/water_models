@@ -52,7 +52,8 @@ def get_helix_distance(tunnel: str, simulation_results: str, save_loc: str) -> p
 
 
 def load_csv_file(consolidated_csv_file):
-    consolidated_df = pd.read_csv(consolidated_csv_file)
+    print("make sure you modify load_csv_file's usecols parameter to load correct columns")
+    consolidated_df = pd.read_csv(consolidated_csv_file,usecols=[1,2,3,4,5])
     return consolidated_df
 
 
@@ -135,23 +136,26 @@ def plot_waters_per_frame(tt_results: str, sim_results: str, tunnels_definition:
     from libs import transport_events_analysis as t_events
     import numpy as np
     from collections import Counter
-    fetched_frames = t_events.get_transit_time(tt_results=tt_results, simulation_results=sim_results,
+    saved_object = os.path.join(save_loc, "plot_waters_per_frames_fetched_frames.obj")
+    if not os.path.isfile(saved_object):
+        fetched_frames = t_events.get_transit_time(tt_results=tt_results, simulation_results=sim_results,
                                                groups_definitions=tunnels_definition,
                                                frame_numbers=True)
+        # Save the fetched_frames for easy future plotting
+        save_file_name = os.path.join(save_loc, "plot_waters_per_frames_fetched_frames.obj")
+        save_to_obj(fetched_frames, save_file_name)
 
-    # Save the fetched_frames for easy future plotting
-    save_file_name = os.path.join(save_loc, "plot_waters_per_frames_fetched_frames.obj")
-    save_to_obj(fetched_frames, save_file_name)
+    fetched_frames = load_from_obj(saved_object)
 
     overall_color = sns.color_palette('deep', 3)
     sns.set(style="white", context="paper", font_scale=1)
-    fig, ax = plt.subplots(nrows=3, ncols=5, figsize=(8, 6), dpi=300)
+    fig, ax = plt.subplots(nrows=3, ncols=4, figsize=(8, 6), dpi=300)
 
-    names = ["1", "1.4", "1.8", "2.4", "3"]
+    names = ["1.4", "1.8", "2.4", "3"]
     models = ["opc", "tip3p", "tip4pew"]
     events = ['Entry&Release', 'Entry', 'Release']
     for event_type in range(3):  # 0= entry&release, 1=entry, 2=release
-        for group in range(5):  # 5 groups
+        for group in range(4):  # 5 groups
             group_df = pd.DataFrame()
             print(f"{events[event_type]} Group {group + 1}")
 
@@ -169,8 +173,8 @@ def plot_waters_per_frame(tt_results: str, sim_results: str, tunnels_definition:
                 plot_data = []  # This will have average number of frames per simulation
                 for sim in data:
                     frames = Counter(sim)
-                    average_event_per_frame = np.average(list(frames.values()))
-                    plot_data.append(average_event_per_frame)
+                    average_water_per_frame = np.average(list(frames.values()))
+                    plot_data.append(average_water_per_frame)
 
                 # set color
                 if "opc" in group_name:
@@ -199,13 +203,13 @@ def plot_waters_per_frame(tt_results: str, sim_results: str, tunnels_definition:
 
             ax[event_type, group].set_xticklabels([])
             ax[event_type, group].set_ylim(0, 6.5)
-        ax[event_type, 2].set_title(f"WATERS PER FRAME {events[event_type]} - P1 tunnel\n", fontweight='bold')
+        # ax[event_type, 2].set_title(f"WATERS PER FRAME {events[event_type]} - P1 tunnel\n", fontweight='bold')
         ax[event_type, 0].set_ylabel("Avg. Num waters")
-        ax[event_type, 0].set_xlabel("Group 1")
-        ax[event_type, 1].set_xlabel("Group 2")
-        ax[event_type, 2].set_xlabel("Group 3")
-        ax[event_type, 3].set_xlabel("Group 4")
-        ax[event_type, 4].set_xlabel("Group 5")
+        ax[event_type, 0].set_xlabel("TCG1")
+        ax[event_type, 1].set_xlabel("TCG2")
+        ax[event_type, 2].set_xlabel("TCG3")
+        ax[event_type, 3].set_xlabel("TCG4")
+
     plt.tight_layout()
     save_figure_name = os.path.join(save_loc, "water_per_frame.png")
     plt.savefig(save_figure_name)
@@ -228,7 +232,7 @@ def figure_two(caver_bottleneck, helix_distance, save_location: str = None):
     ax2 = fig.add_subplot(ga[0, :])
     hd = sns.boxplot(data=helix_distance, ax=ax2, boxprops=boxprops, whiskerprops=whiskerprops, capprops=capprops,
                      flierprops=flierprops)
-    hd.set_title("A)  Helix-Helix distance of P1 tunnel")
+    # hd.set_title("A)  Helix-Helix distance of P1 tunnel")
     hd.set_xticklabels(groups)
     hd.set_ylabel("Distance (Å)")
     hd.yaxis.set_major_formatter(FormatStrFormatter('%.0f'))
@@ -237,9 +241,9 @@ def figure_two(caver_bottleneck, helix_distance, save_location: str = None):
     ax1 = fig.add_subplot(ga[1, :])
     bp = sns.boxplot(data=caver_bottleneck, ax=ax1, boxprops=boxprops, whiskerprops=whiskerprops,
                      capprops=capprops, flierprops=flierprops)
-    bp.set_title("Average bottleneck radii of P1 tunnel")
+    # bp.set_title("Average bottleneck radii of P1 tunnel")
     bp.set_xticklabels(groups)
-    bp.set_ylabel("Bottleneck (Å)")
+    bp.set_ylabel("Bottleneck radii")
 
     save_name = os.path.join(save_location, "figure2.png")
     plt.tight_layout()
@@ -323,7 +327,7 @@ def tt_events(tt_events, save_location, normailzed=None):
     fig, ax = plt.subplots(nrows=1, ncols=4, figsize=(10, 3), dpi=300)
     groups = [ "TCG1", "TCG2", "TCG3", "TCG4"]
     # Transport events
-    j = 0
+    j = 3
     tt_axes = []
     for i in range(4):
         _df = tt_events.iloc[:, j:j + 3]
@@ -476,12 +480,16 @@ def main():
     simulation_results = "/data/aravindramt/dean/md/simulations/"
     save_location = "/home/aravind/PhD_local/dean/figures/main_images/"
     consolidated_csv_file = '/home/aravind/PhD_local/dean/figures/transport_tools/p1_only.csv'
+    bottleneck_csv ="/home/aravind/PhD_local/dean/figures/main_images/average_bottleneck_main_figure.csv"
+    helix_csv = "/home/aravind/PhD_local/dean/figures/main_images/helix_distance_main_figure.csv"
 
     # bottleneck = get_average_bottleneck(tunnels_def=P1, simulation_results=simulation_results, tt_results=tt_results
     #                                     ,save_loc=save_location)
     # helix = get_helix_distance("p1", simulation_results,save_loc=save_location)
     # tt = load_csv_file(consolidated_csv_file)
-    # figure_two(bottleneck, helix, save_location)
+    bottleneck = load_csv_file(bottleneck_csv)
+    helix = load_csv_file(helix_csv)
+    figure_two(bottleneck, helix, save_location)
     # tt_events(tt, save_location)
     # plot_water_retention_time(rt, save_location, normailzed="bygroup")
 
@@ -491,7 +499,7 @@ def main():
 
     # plot_waters_per_frame(tt_results=tt_results, sim_results=simulation_results, tunnels_definition=main_tunnel,
     #                       save_loc=save_location)
-    plot_percent_event_occurrence(tt_results, simulation_results, main_tunnel, save_location)
+    # plot_percent_event_occurrence(tt_results, simulation_results, main_tunnel, save_location)
 
 
 if __name__ == '__main__':
