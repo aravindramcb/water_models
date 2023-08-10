@@ -4,6 +4,8 @@ from collections import defaultdict
 
 import matplotlib.pyplot as plt
 from scikit_posthocs import posthoc_dunn
+from statsmodels.sandbox.stats.multicomp import MultiComparison
+
 from libs import transport_events_analysis as tt_events
 from scipy.stats import kruskal
 import pandas as pd
@@ -177,6 +179,54 @@ def full_bottleneck_statistics():
         i+=1
 
 
+def tt_events_statistics(tt_events_csv:str):
+    tt_events=pd.read_csv(tt_events_csv)
+    groups = [ "TCG1", "TCG2", "TCG3", "TCG4"]
+    from scipy.stats import f_oneway
+    from statsmodels.stats.multicomp import pairwise_tukeyhsd
+    def perform_test(dataframe):
+        # dataframe.columns = col_names
+        # df_long = pd.melt(dataframe.reset_index(drop=True), var_name='Group', value_name='Value')
+        # dunns_result = posthoc_dunn(df_long, group_col='Group', val_col='Value', p_adjust='bonferroni')
+        # return dunns_result
+        # Perform one-way ANOVA to get the F-statistic and p-value
+        # anova_result = f_oneway(*[group["Value"] for name, group in df_long.groupby("Group")])
+        data = dataframe.values.tolist()
+        anova_result = f_oneway(data[0],data[1],data[2])
+        f_statistic = anova_result.statistic
+        p_value = anova_result.pvalue
+        print(f"P_value = {p_value} \n f_statistic = {f_statistic}")
+        # Perform Tukey's HSD test for multiple comparisons
+        # tukey_result = MultiComparison(df_long['Value'], df_long['Group']).tukeyhsd()
+
+        # Convert the Tukey's HSD test results to a DataFrame
+        # tukey_df = pd.DataFrame(data=tukey_result._results_table.data[1:], columns=tukey_result._results_table.data[0])
+
+        # Add F-statistic and p-value to the DataFrame
+        # tukey_df.insert(1, "F-Statistic", f_statistic)
+        # tukey_df.insert(2, "p-value", p_value)
+        # return tukey_df
+    # Transport events
+    j = 0
+    for i in range(4):
+        _df = tt_events.iloc[:, j:j + 3]
+        result = perform_test(_df)
+        print(result)
+        j +=3
+
+def avg_std_for_bottleneck_radii():
+    bottlenecks = pd.read_csv("/home/aravind/PhD_local/dean/figures/bottlenecks/"
+                              "time_evolution/bottleneck_per_sim.csv")
+
+    average = bottlenecks.mean()
+    std = bottlenecks.std()
+
+    results_df = pd.DataFrame({'Column': bottlenecks.columns, 'Average': average, 'Standard Deviation': std}).T
+
+    results_df.to_csv("/home/aravind/PhD_local/dean/figures/bottlenecks/"
+                              "time_evolution/avg_std_bottleneck.csv")
+
+
 if __name__ == '__main__':
     tt_events_csv = "/home/aravind/PhD_local/dean/statistics/tt_events_HST.csv"
     tt_results = "/data/aravindramt/dean/tt/tt_0_9_5"
@@ -190,7 +240,10 @@ if __name__ == '__main__':
     details_file_loc = "/data/aravindramt/dean/tt/tt_0_9_5/data/super_clusters/details" \
                        "/initial_super_cluster_details.txt"
 
+
     # transit_time_stats(tt_results,sim_results,main_tunnel)
     # percent_events_occurance_statistics(tt_results,simulation_results,main_tunnel)
     # average_bottleneck_statistics(bottleneck_csv)
-    full_bottleneck_statistics()
+    # full_bottleneck_statistics()
+    tt_events_statistics("/home/aravind/PhD_local/dean/figures/transport_tools/p1_only.csv")
+    # avg_std_for_bottleneck_radii()
