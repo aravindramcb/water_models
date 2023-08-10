@@ -406,8 +406,9 @@ def consolidate_results(tt_results: str, groups_definitions: dict, save_location
     group = [1, 2, 3, 4, 5]
 
     # CONSOLIDATE ENTRY + RELEASE PER SIMULATION
+    # get corresponding SC per group which are water transporters
     groups_scs = get_scids_of_groups(comparative_analysis_results,
-                                     groups_definitions,show_info=True)  # get corresponding SC per group which are water transporters
+                                     groups_definitions,show_info=True)
 
     opc_folders = list(groups_scs.keys())[0:5]  # Assuming folder 1-5 is OPC and so on
     tip3p_folders = list(groups_scs.keys())[5:10]
@@ -437,8 +438,8 @@ def consolidate_results(tt_results: str, groups_definitions: dict, save_location
                 except ValueError:
                     pass
                 # _combined_df.reset_index(inplace=True)
-                print(_combined_df)
-                print(_combined_df.sum())
+                # print(_combined_df)
+                # print(_combined_df.sum())
                 sum_list = list(_combined_df.sum(axis=1))
                 # print(sum_list)
                 col_name = tunnel_id[col] + "_" + model + "_" + str(group[row])
