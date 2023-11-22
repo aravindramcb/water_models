@@ -154,16 +154,17 @@ def plot(data: dict = None, dump_file: str = None, save_location: str = None):
             i += 15
             j += 15
             k += 15
+
     ax[4,2].yaxis.set_major_formatter(FormatStrFormatter('%.0f'))
     # ax[4,2].set_ylim(0,15)
     ax[0, 0].set_title("P1", fontsize=10, fontweight='bold')
     ax[0, 1].set_title("P2", fontsize=10, fontweight='bold')
     ax[0, 2].set_title("P3", fontsize=10, fontweight='bold')
-    ax[0, 0].set_ylabel("Group 1A", fontsize=10)
-    ax[1, 0].set_ylabel("Group 1.4A", fontsize=10)
-    ax[2, 0].set_ylabel("Group 1.8A", fontsize=10)
-    ax[3, 0].set_ylabel("Group 2.4A", fontsize=10)
-    ax[4, 0].set_ylabel("Group 3A", fontsize=10)
+    ax[0, 0].set_ylabel("TCG0", fontsize=10)
+    ax[1, 0].set_ylabel("TCG1", fontsize=10)
+    ax[2, 0].set_ylabel("TCG2", fontsize=10)
+    ax[3, 0].set_ylabel("TCG3", fontsize=10)
+    ax[4, 0].set_ylabel("TCG4", fontsize=10)
     ax[0, 3].set_title("Others", fontsize=10, fontweight='bold')
     plt.tight_layout(pad=1.9, w_pad=0.3, h_pad=0.3)
     opc_patch = Patch(color=colors[0], label='OPC')
@@ -172,7 +173,7 @@ def plot(data: dict = None, dump_file: str = None, save_location: str = None):
     ax[0, 3].legend([opc_patch, tip3p_patch, tip4pew_patch], ["OPC", "TIP3P", "TIP4P-Ew"],
                     bbox_to_anchor=(-0.55, 1.05, 0, 0), loc="lower right",
                     borderaxespad=1, ncol=3)
-    fig.text(x=0.01, y=0.5, s="NUMBER OF SNAPSHOTS", rotation=90)
+    fig.text(x=0.01, y=0.4, s="NUMBER OF SNAPSHOTS\n\n", rotation=90)
     fig.text(x=0.4, y=0.01, s="TUNNELS & MODELS")
     plt.savefig(save_location + "before.png")
 
@@ -184,8 +185,8 @@ def main():
                   "P3": {10}}
     # count_frames can be used with or without saving dump file, here I have saved a dump because my CSV files are
     # very large (>4GB), so I cannot wait every time to modify results.
-    count_frames(tunnels_dict=groups_def, tt_results_location=tt_results_location, save=True,
-                 save_location=save_location)
+    # count_frames(tunnels_dict=groups_def, tt_results_location=tt_results_location, save=True,
+    #              save_location=save_location)
     dump_file_name=os.path.join(save_location,'number_frames.pkl')
     plot(dump_file=dump_file_name,save_location=save_location)
 

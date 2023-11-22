@@ -132,35 +132,51 @@ def main():
     traj = './merged.nc'
     top_opc = 'temp/structure_HMR.parm7'
     top = 'structure_HMR.parm7'
-    root_dir= '/mnt/gpu/dean/md/simulations'
-
+    root_dir= '/data/aravindramt/dean/md/simulations'
+    models =["tip4pew"]
     time_whole = []
     rmsf_whole=[]
+    dir_names=[]
+    rmsd_whole=[]
+    group_names = ["TCG_d1.0_o1.1","TCG_d1.4_o1.2","TCG_d1.8_o1.4","TCG_d2.5_o2.1",
+                   "TCG_d3.0_o2.5"]
     # 0=OPC, 1=TIP3p, 2=TIP4P-Ew
     os.chdir(root_dir)
+    current_group = 0
     for epoch in epoch_list:
         rmsd_per_model= []
+
         for model in models:
             rmsd_per_bottleneck = []
+
             for simulation in sim_list:
                 current_dir=epoch+"_"+model+"_"+simulation
-                # os.chdir(current_dir)
+                os.chdir(root_dir+"/"+current_dir)
+                column_name = group_names[current_group]+"_" +"sim_"+simulation
+                dir_names.append(column_name)
                 print('working in', current_dir)
                 # generate_rmsd(traj,top)
-                # rmsf_array, time = process_rmsdf()
-                rmsd_array, time = process_rmsds(current_dir+'/rmsd.dat')
+                rmsf_array, time = process_rmsdf()
+                # rmsd_array, time = process_rmsds('rmsd.dat')
                 # time_whole.append(time)
-                # rmsf_whole.append(rmsf_array)
-                rmsd_per_bottleneck.append(rmsd_array[1:])
+                rmsf_whole.append(rmsf_array)
+                # rmsd_per_bottleneck.append(rmsd_array[1:])
+                # rmsd_whole.append(rmsd_array)
             # plot_boxplot(rmsd_per_bottleneck,model+epoch)
-            rmsd_per_model.append(rmsd_per_bottleneck)
-        plot_subplot(rmsd_per_model,"RMSD-"+epoch)
+            # rmsd_per_model.append(rmsd_per_bottleneck)
+            current_group +=1
+        # plot_subplot(rmsd_per_model,"RMSD-"+epoch)
+    # Repository
+    reshaped_rmsf = np.concatenate(rmsf_whole, axis=1)
+    df = pd.DataFrame(reshaped_rmsf,columns=dir_names)
+    df.to_csv('~/rmsf_tip4pew.csv', index=False)
+
     # for sim in rmsf_whole:
     #     plt.plot(time_whole[1][1:],sim[1:])
-    #     plt.title('TIP3P')
-    #     plt.xlabel('RES #')
-    #     plt.ylabel('RMSf [Å2]')
-    # plt.savefig("/home/aravind/PhD_local/dean/figures/simulation_analysis/rmsf_line_t3p.png",dpi=300)
+    #     plt.title('TIP4P-Ew')
+    #     plt.xlabel('Residue ID')
+    #     plt.ylabel('RMSF [Å2]')
+    # plt.savefig("/home/aravind/PhD_local/dean/figures/simulation_analysis/rmsf_line_t4p_manuscript.png",dpi=300)
     # plot_rmsd(rmsf_whole, time_whole)
     # plot_violinplot(rmsd_whole,'TIP4P-Ew')
 

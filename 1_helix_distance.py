@@ -34,13 +34,14 @@ def collect_distance(results_dir, residues_to_load, atom_mask_to_measure):
         distance = pt.distance(loaded_traj, atom_mask_to_measure)
         print(distance)
         distance_df[folder] = distance
+    distance_df.to_csv("/data/aravindramt/dean/md/distance_from_pytraj_p1.csv")
     return distance_df
 
 
 # Plot openings
 def plot(tunnel):
     import seaborn as sns
-    distance_from_csv = pd.read_csv(f'/mnt/gpu/dean/md/{tunnel}_openings.csv', index_col='Unnamed: 0')
+    distance_from_csv = pd.read_csv(f'/data/aravindramt/dean/md/{tunnel}_openings.csv', index_col='Unnamed: 0')
     distance_from_csv = distance_from_csv.reindex(columns=sim_dir)
     rows, cols = 5, 3
     fig, ax = plt.subplots(5, 3, figsize=(8.27, 11.7), sharex="col", sharey="row", dpi=300)
@@ -67,11 +68,11 @@ def plot(tunnel):
     ax[0, 0].set_title("OPC", fontsize=15, fontweight='bold')
     ax[0, 1].set_title("TIP3P", fontsize=15, fontweight='bold')
     ax[0, 2].set_title("TIP4P-Ew", fontsize=15, fontweight='bold')
-    ax[0, 0].set_ylabel("Group 1A", fontsize=15)
-    ax[1, 0].set_ylabel("Group 1.4A", fontsize=15)
-    ax[2, 0].set_ylabel("Group 1.8A", fontsize=15)
-    ax[3, 0].set_ylabel("Group 2.4A", fontsize=15)
-    ax[4, 0].set_ylabel("Group 3A", fontsize=15)
+    ax[0, 0].set_ylabel("TCG0", fontsize=15)
+    ax[1, 0].set_ylabel("TCG1", fontsize=15)
+    ax[2, 0].set_ylabel("TCG2", fontsize=15)
+    ax[3, 0].set_ylabel("TCG3", fontsize=15)
+    ax[4, 0].set_ylabel("TCG4", fontsize=15)
     plt.savefig(f'/home/aravind/PhD_local/dean/figures/helix-helix_distance/opening_{tunnel}_ind.png')
 
 
@@ -79,13 +80,13 @@ if __name__ == '__main__':
     p1mask = ':141@CA :172@CA'
     p2mask = ':242@CA :139@CA'
     p3mask = ':203@CA :149@CA'
-    results = '/mnt/gpu/dean/md/simulations/'
+    results = '/data/aravindramt/dean/md/simulations/'
 
     # MEASURE DISTANCE
     # distance_df = collect_distance(results_dir,residues_to_load,atom_mask_to_measure)
-    distance_df = collect_distance(results, ':242,139', p2mask)
+    distance_df = collect_distance(results, ':141,172', p2mask)
     # Always save as {your_name}_openings.csv
-    distance_df.to_csv('./dean/md/p2_openings.csv')
+    # distance_df.to_csv('./dean/md/p2_openings.csv')
 
     # PLOT SUBPLOTS OF MEASUREMENT
     plot('p1')
