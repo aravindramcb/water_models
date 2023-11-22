@@ -294,6 +294,8 @@ def plot_water_transit_time(tunnels_definition, tt_results, simulation_results, 
     # y_limits = [110, 95, 120, 95]
     y_limits = [120, 120, 120, 120]
     obj = os.path.join(save_location, "plot_water_transit_time_rt_full.obj")
+    obj_entry = os.path.join(save_location, "plot_water_transit_time_rt_entry.obj")
+    obj_release = os.path.join(save_location, "plot_water_transit_time_rt_release.obj")
     if not os.path.exists(obj):
         rt_full = get_transit_time(tt_results, simulation_results, tunnels_definition, type='combined',
                                    save_loc=save_location)
@@ -319,8 +321,15 @@ def plot_water_transit_time(tunnels_definition, tt_results, simulation_results, 
     ax[0, 0].set_ylabel("Time (ps)", fontweight="bold")
 
     # Entry
-    rt_entry = get_transit_time(tt_results, simulation_results, tunnels_definition, type='entry',
-                                save_loc=save_location)
+    if not os.path.exists(obj_entry):
+        rt_entry = get_transit_time(tt_results, simulation_results, tunnels_definition, type='entry',
+                                    save_loc=save_location)
+        # Save the fetched_frames for easy future plotting
+        save_file_name = os.path.join(save_location, "plot_water_transit_time_rt_entry.obj")
+        save_to_obj(rt_full, save_file_name)
+    else:
+        rt_entry = load_from_obj(obj_entry)
+
     for i in range(4):
         data = rt_entry[groups[i]]
         data = data.apply(lambda x: x * 10, axis=0)
@@ -335,8 +344,15 @@ def plot_water_transit_time(tunnels_definition, tt_results, simulation_results, 
     ax[1, 0].set_ylabel("Time (ps)", fontweight="bold")
 
     # Release
-    rt_release = get_transit_time(tt_results, simulation_results, tunnels_definition, type='release',
-                                  save_loc=save_location)
+    if not os.path.exists(obj_release):
+        rt_release = get_transit_time(tt_results, simulation_results, tunnels_definition, type='release',
+                                      save_loc=save_location)
+        # Save the fetched_frames for easy future plotting
+        save_file_name = os.path.join(save_location, "plot_water_transit_time_rt_release.obj")
+        save_to_obj(rt_release, save_file_name)
+    else:
+        rt_release = load_from_obj(obj_entry)
+
     for i in range(4):
         data = rt_release[groups[i]]
         data = data.apply(lambda x: x * 10, axis=0)
@@ -550,11 +566,11 @@ def main():
     # tt_events(tt, save_location)
 
     # NEW !!
-    # plot_water_transit_time(tunnels_definition=main_tunnel, tt_results=tt_results,
-    #                         simulation_results=simulation_results, save_location=save_location)
+    plot_water_transit_time(tunnels_definition=main_tunnel, tt_results=tt_results,
+                            simulation_results=simulation_results, save_location=save_location)
 
-    plot_waters_per_frame(tt_results=tt_results, sim_results=simulation_results, tunnels_definition=main_tunnel,
-                          save_loc=save_location)
+    # plot_waters_per_frame(tt_results=tt_results, sim_results=simulation_results, tunnels_definition=main_tunnel,
+    #                       save_loc=save_location)
     # plot_percent_event_occurrence(tt_results, simulation_results, main_tunnel, save_location)
 
 
